@@ -23,6 +23,7 @@ export interface IProduct extends Document {
   images: string[];
   stock: number;
   colors?: string[]; // For keychains
+  fonts?: string[]; // For nameplates and keychains
   isTopProduct: boolean;
   isActive: boolean;
   reviews: IReview[];
@@ -118,6 +119,10 @@ const productSchema = new Schema<IProduct>(
       default: 0,
     },
     colors: [{
+      type: String,
+      trim: true,
+    }],
+    fonts: [{
       type: String,
       trim: true,
     }],

@@ -42,6 +42,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedFont, setSelectedFont] = useState<string | null>(null);
 
   useEffect(() => {
     if (slug) {
@@ -55,6 +56,9 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (product?.colors && product.colors.length > 0) {
       setSelectedColor(product.colors[0]);
+    }
+    if (product?.fonts && product.fonts.length > 0) {
+      setSelectedFont(product.fonts[0]);
     }
   }, [product]);
 
@@ -77,6 +81,11 @@ export default function ProductDetailPage() {
       toast.error("Please select a color");
       return;
     }
+    // Check if font is required but not selected
+    if (product.fonts && product.fonts.length > 0 && !selectedFont) {
+      toast.error("Please select a font");
+      return;
+    }
 
     dispatch(
       addToCart({
@@ -89,6 +98,7 @@ export default function ProductDetailPage() {
         quantity,
         stock: product.stock,
         color: selectedColor || undefined,
+        font: selectedFont || undefined,
       })
     );
     dispatch(openCart());
@@ -261,6 +271,7 @@ export default function ProductDetailPage() {
               {product.description}
             </p>
 
+
             {/* Color Selection (for keychains) */}
             {product.colors && product.colors.length > 0 && (
               <div className="mb-6">
@@ -279,6 +290,31 @@ export default function ProductDetailPage() {
                       }`}
                     >
                       {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Font Selection (for keychains) */}
+            {product.fonts && product.fonts.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-secondary mb-3">
+                  Select Font: <span className="text-primary">{selectedFont}</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {product.fonts.map((font) => (
+                    <button
+                      key={font}
+                      onClick={() => setSelectedFont(font)}
+                      className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                        selectedFont === font
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                      style={{ fontFamily: font }}
+                    >
+                      {font}
                     </button>
                   ))}
                 </div>

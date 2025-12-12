@@ -11,6 +11,7 @@ export interface CartItem {
   quantity: number;
   stock: number;
   color?: string;
+  font?: string;
 }
 
 // Cart state interface
@@ -57,7 +58,8 @@ const cartSlice = createSlice({
       const existingIndex = state.items.findIndex(
         (item) =>
           item._id === action.payload._id &&
-          item.color === action.payload.color
+          item.color === action.payload.color &&
+          item.font === action.payload.font
       );
 
       if (existingIndex >= 0) {
@@ -73,10 +75,10 @@ const cartSlice = createSlice({
     },
 
     // Remove item from cart
-    removeFromCart: (state, action: PayloadAction<{ _id: string; color?: string }>) => {
+    removeFromCart: (state, action: PayloadAction<{ _id: string; color?: string; font?: string }>) => {
       state.items = state.items.filter(
         (item) =>
-          !(item._id === action.payload._id && item.color === action.payload.color)
+          !(item._id === action.payload._id && item.color === action.payload.color && item.font === action.payload.font)
       );
       saveCartToStorage(state.items);
     },
@@ -84,12 +86,13 @@ const cartSlice = createSlice({
     // Update item quantity
     updateQuantity: (
       state,
-      action: PayloadAction<{ _id: string; color?: string; quantity: number }>
+      action: PayloadAction<{ _id: string; color?: string; font?: string; quantity: number }>
     ) => {
       const item = state.items.find(
         (item) =>
           item._id === action.payload._id &&
-          item.color === action.payload.color
+          item.color === action.payload.color &&
+          item.font === action.payload.font
       );
 
       if (item) {

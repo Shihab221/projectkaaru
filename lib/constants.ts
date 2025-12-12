@@ -66,6 +66,19 @@ export const KEYCHAIN_COLORS = [
   { name: "Gray", hex: "#808080" },
 ];
 
+export const FONT_OPTIONS = [
+  "Arial",
+  "Verdana",
+  "Helvetica",
+  "Times New Roman",
+  "Courier New",
+  "Georgia",
+  "Palatino",
+  "Garamond",
+  "Bookman",
+  "Comic Sans MS",
+];
+
 // Pagination
 export const PRODUCTS_PER_PAGE = 12;
 export const ORDERS_PER_PAGE = 10;

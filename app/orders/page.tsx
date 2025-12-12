@@ -30,6 +30,7 @@ interface Order {
     price: number;
     quantity: number;
     color?: string;
+    font?: string;
   }[];
   total: number;
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -246,6 +247,11 @@ export default function OrdersPage() {
                                     Color: {item.color}
                                   </p>
                                 )}
+                                {item.font && (
+                                  <p className="text-sm text-gray-500">
+                                    Font: {item.font}
+                                  </p>
+                                )}
                                 <p className="text-sm text-gray-500">
                                   Qty: {item.quantity}
                                 </p>
@@ -268,5 +274,6 @@ export default function OrdersPage() {
     </div>
   );
 }
+
 
 

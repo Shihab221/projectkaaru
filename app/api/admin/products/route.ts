@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       images,
       stock,
       colors,
+      fonts,
       isTopProduct,
     } = body;
 
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       images: images || [],
       stock,
       colors: colors || [],
+      fonts: fonts || [],
       isTopProduct: isTopProduct || false,
     });
 

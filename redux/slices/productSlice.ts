@@ -18,6 +18,7 @@ export interface Product {
   images: string[];
   stock: number;
   colors?: string[];
+  fonts?: string[];
   isTopProduct: boolean;
   isActive: boolean;
   averageRating: number;
