@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Filter, SlidersHorizontal, X, ChevronDown, Search } from "lucide-react";
@@ -23,7 +23,7 @@ const sortOptions = [
   { value: "rating", label: "Top Rated" },
 ];
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -249,7 +249,7 @@ export default function ProductsPage() {
               onClick={() => router.push("/products")}
               className="btn btn-primary mt-4"
             >
-              View All Products
+              View All Products...
             </button>
           </div>
         )}
@@ -258,3 +258,47 @@ export default function ProductsPage() {
   );
 }
 
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-100">
+          <div className="container-custom py-6 md:py-8">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="container-custom py-6 md:py-8">
+          {/* Filters Bar Skeleton */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex-1 max-w-md">
+              <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-24 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Products Grid Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="card animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-t-lg" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-5 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
