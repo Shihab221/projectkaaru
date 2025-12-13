@@ -75,7 +75,7 @@ export function CartSidebar() {
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div
-                      key={`${item._id}-${item.color}`}
+                      key={`${item._id}-${item.color}-${item.font}`}
                       className="flex gap-4 p-3 bg-gray-50 rounded-lg"
                     >
                       {/* Product Image */}
@@ -109,6 +109,11 @@ export function CartSidebar() {
                             Color: {item.color}
                           </p>
                         )}
+                        {item.font && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Font: {item.font}
+                          </p>
+                        )}
 
                         <p className="text-primary font-semibold mt-1">
                           {formatPrice(item.discountedPrice || item.price)}
@@ -123,6 +128,7 @@ export function CartSidebar() {
                                   updateQuantity({
                                     _id: item._id,
                                     color: item.color,
+                                    font: item.font,
                                     quantity: item.quantity - 1,
                                   })
                                 )
@@ -141,6 +147,7 @@ export function CartSidebar() {
                                   updateQuantity({
                                     _id: item._id,
                                     color: item.color,
+                                    font: item.font,
                                     quantity: item.quantity + 1,
                                   })
                                 )
@@ -158,6 +165,7 @@ export function CartSidebar() {
                                 removeFromCart({
                                   _id: item._id,
                                   color: item.color,
+                                  font: item.font,
                                 })
                               )
                             }

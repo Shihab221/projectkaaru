@@ -8,6 +8,7 @@ export interface IOrderItem {
   price: number;
   quantity: number;
   color?: string;
+  font?: string;
 }
 
 // Shipping address interface
@@ -68,6 +69,7 @@ const orderItemSchema = new Schema<IOrderItem>(
       min: 1,
     },
     color: String,
+    font: String,
   },
   { _id: false }
 );
@@ -153,16 +155,7 @@ const orderSchema = new Schema<IOrder>(
   }
 );
 
-// Generate order number before saving
-orderSchema.pre("save", async function (next) {
-  if (!this.orderNumber) {
-    const date = new Date();
-    const prefix = `PK${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-    this.orderNumber = `${prefix}${random}`;
-  }
-  next();
-});
+// Order number will be generated in the API route to avoid pre-save hook issues
 
 // Indexes
 orderSchema.index({ user: 1, createdAt: -1 });

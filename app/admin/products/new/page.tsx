@@ -175,7 +175,7 @@ export default function NewProductPage() {
       }
 
       toast.success("Product created successfully!");
-      router.push("/admin/products");
+      router.push("/admin");
     } catch (error: any) {
       toast.error(error.message);
     } finally {

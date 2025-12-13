@@ -249,7 +249,7 @@ function ProductsPageContent() {
               onClick={() => router.push("/products")}
               className="btn btn-primary mt-4"
             >
-              View All Products...
+              View All Products
             </button>
           </div>
         )}

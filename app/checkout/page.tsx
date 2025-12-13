@@ -1,0 +1,605 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  CreditCard,
+  Truck,
+  MapPin,
+  Phone,
+  User,
+  Package,
+  Check,
+  Loader2,
+} from "lucide-react";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
+import {
+  selectCartItems,
+  selectCartTotal,
+  selectCartItemsCount,
+  clearCart,
+} from "@/redux/slices/cartSlice";
+import { selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
+import { formatPrice } from "@/lib/utils";
+import toast from "react-hot-toast";
+import Link from "next/link";
+
+interface CheckoutForm {
+  // Customer Details
+  name: string;
+  phone: string;
+  email: string;
+  // Shipping Address
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  // Payment
+  paymentMethod: "cod" | "bkash" | "nagad" | "card";
+  transactionId: string;
+  notes: string;
+}
+
+const paymentMethods = [
+  {
+    id: "cod" as const,
+    name: "Cash on Delivery",
+    description: "Pay when you receive your order",
+    icon: Truck,
+  },
+  {
+    id: "bkash" as const,
+    name: "bKash",
+    description: "Pay with bKash mobile banking",
+    icon: CreditCard,
+  },
+  {
+    id: "nagad" as const,
+    name: "Nagad",
+    description: "Pay with Nagad mobile banking",
+    icon: CreditCard,
+  },
+  {
+    id: "card" as const,
+    name: "Card Payment",
+    description: "Pay with credit/debit card",
+    icon: CreditCard,
+  },
+];
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const cartItems = useAppSelector(selectCartItems);
+  const cartTotal = useAppSelector(selectCartTotal);
+  const itemCount = useAppSelector(selectCartItemsCount);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const authInitialized = useAppSelector(selectAuthInitialized);
+
+  const [formData, setFormData] = useState<CheckoutForm>({
+    name: "",
+    phone: "",
+    email: "",
+    street: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "Bangladesh",
+    paymentMethod: "cod",
+    transactionId: "",
+    notes: "",
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (authInitialized && !isAuthenticated) {
+      router.replace("/auth?redirect=/checkout");
+    }
+  }, [authInitialized, isAuthenticated, router]);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (cartItems.length === 0 && !orderPlaced) {
+      router.replace("/products");
+    }
+  }, [cartItems, orderPlaced, router]);
+
+  // Calculate totals
+  const itemsTotal = cartItems.reduce(
+    (total, item) => total + (item.discountedPrice || item.price) * item.quantity,
+    0
+  );
+  const shippingCost = itemsTotal > 1000 ? 0 : 100; // Free shipping over ৳1000
+  const discount = 0; // Could be implemented later with coupons
+  const total = itemsTotal + shippingCost - discount;
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePaymentMethodChange = (method: CheckoutForm["paymentMethod"]) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentMethod: method,
+      transactionId: method === "cod" ? "" : prev.transactionId,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isAuthenticated) {
+      toast.error("Please log in to place an order");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.name || !formData.phone || !formData.street || !formData.city) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate transaction ID for mobile payments
+    if (formData.paymentMethod !== "cod" && !formData.transactionId.trim()) {
+      toast.error("Please enter transaction ID for mobile payments");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const orderData = {
+        items: cartItems.map((item) => ({
+          product: item._id,
+          name: item.name,
+          image: item.image,
+          price: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          color: item.color,
+          font: item.font,
+        })),
+        shippingAddress: {
+          name: formData.name,
+          phone: formData.phone,
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.postalCode,
+          country: formData.country,
+        },
+        paymentMethod: formData.paymentMethod,
+        paymentStatus: formData.paymentMethod === "cod" ? "pending" : "paid",
+        itemsTotal,
+        shippingCost,
+        discount,
+        total,
+        notes: formData.notes,
+        transactionId: formData.transactionId,
+      };
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to place order");
+      }
+
+      // Clear cart and show success
+      dispatch(clearCart());
+      setOrderPlaced(true);
+      toast.success("Order placed successfully!");
+
+      // Redirect to orders page after a delay
+      setTimeout(() => {
+        router.push("/orders");
+      }, 2000);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to place order");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect via useEffect
+  }
+
+  if (cartItems.length === 0 && !orderPlaced) {
+    return null; // Will redirect via useEffect
+  }
+
+  if (orderPlaced) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md text-center"
+        >
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-secondary mb-2">
+            Order Placed Successfully!
+          </h1>
+          <p className="text-gray-500 mb-6">
+            Thank you for your order. You will be redirected to your orders page shortly.
+          </p>
+          <Link href="/orders" className="btn btn-primary">
+            View My Orders
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container-custom py-6 md:py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-500 hover:text-secondary mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to cart
+          </button>
+          <h1 className="text-2xl md:text-3xl font-bold text-secondary">
+            Checkout
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Complete your order by filling in the details below
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Customer Details */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card p-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Customer Details
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="+880 1XX XXX XXXX"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="john@example.com"
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Shipping Address */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="card p-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Shipping Address
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={formData.street}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="123 Main Street"
+                    required
+                  />
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      className="input"
+                      placeholder="Dhaka"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">
+                      State/Division
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      className="input"
+                      placeholder="Dhaka"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">
+                      Postal Code
+                    </label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      value={formData.postalCode}
+                      onChange={handleInputChange}
+                      className="input"
+                      placeholder="1216"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Country
+                  </label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    className="input"
+                  >
+                    <option value="Bangladesh">Bangladesh</option>
+                    <option value="India">India</option>
+                    <option value="Pakistan">Pakistan</option>
+                  </select>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Payment Method */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="card p-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Payment Method
+              </h2>
+              <div className="space-y-3">
+                {paymentMethods.map((method) => (
+                  <label
+                    key={method.id}
+                    className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.paymentMethod === method.id
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.id}
+                      checked={formData.paymentMethod === method.id}
+                      onChange={() => handlePaymentMethodChange(method.id)}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <method.icon className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-secondary">{method.name}</p>
+                      <p className="text-sm text-gray-500">{method.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {/* Transaction ID for mobile payments */}
+              {(formData.paymentMethod === "bkash" ||
+                formData.paymentMethod === "nagad") && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-secondary mb-1.5">
+                    Transaction ID *
+                  </label>
+                  <input
+                    type="text"
+                    name="transactionId"
+                    value={formData.transactionId}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="Enter transaction ID"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the transaction ID from your {formData.paymentMethod} payment confirmation
+                  </p>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Order Notes */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="card p-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4">
+                Order Notes (Optional)
+              </h2>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                className="input min-h-[100px]"
+                placeholder="Any special instructions or notes for your order..."
+              />
+            </motion.div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="card p-6 sticky top-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Order Summary
+              </h2>
+
+              {/* Items */}
+              <div className="space-y-3 mb-4">
+                {cartItems.map((item) => (
+                  <div key={`${item._id}-${item.color}-${item.font}`} className="flex gap-3">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <Package className="w-6 h-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-secondary text-sm line-clamp-1">
+                        {item.name}
+                      </p>
+                      {item.color && (
+                        <p className="text-xs text-gray-500">Color: {item.color}</p>
+                      )}
+                      {item.font && (
+                        <p className="text-xs text-gray-500">Font: {item.font}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Qty: {item.quantity} × {formatPrice(item.discountedPrice || item.price)}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-secondary text-sm">
+                      {formatPrice((item.discountedPrice || item.price) * item.quantity)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="border-t border-gray-100 pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span>{formatPrice(itemsTotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Shipping</span>
+                  <span>{shippingCost === 0 ? "Free" : formatPrice(shippingCost)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Discount</span>
+                    <span>-{formatPrice(discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-secondary pt-2 border-t border-gray-100">
+                  <span>Total</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn btn-primary w-full mt-6"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Placing Order...
+                  </>
+                ) : (
+                  `Place Order • ${formatPrice(total)}`
+                )}
+              </button>
+            </motion.div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

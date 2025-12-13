@@ -40,6 +40,7 @@ interface Order {
     price: number;
     quantity: number;
     color?: string;
+    font?: string;
   }[];
   shippingAddress: {
     name: string;
@@ -428,6 +429,9 @@ export default function AdminOrdersPage() {
                           {item.color && (
                             <p className="text-sm text-gray-500">Color: {item.color}</p>
                           )}
+                          {item.font && (
+                            <p className="text-sm text-gray-500">Font: {item.font}</p>
+                          )}
                           <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                         </div>
                         <p className="font-semibold text-secondary">
@@ -502,6 +506,9 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+
+
 
 
 

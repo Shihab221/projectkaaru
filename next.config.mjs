@@ -9,6 +9,18 @@ const nextConfig = {
   },
   images: {
     domains: ['localhost', 'res.cloudinary.com', 'images.unsplash.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
+    ],
     unoptimized: false,
   },
   poweredByHeader: false,

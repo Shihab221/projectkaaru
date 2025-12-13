@@ -14,10 +14,18 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const orders = await Order.find()
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get("limit") || "0");
+
+    const query = Order.find()
       .populate("user", "name email")
-      .sort({ createdAt: -1 })
-      .lean();
+      .sort({ createdAt: -1 });
+
+    if (limit > 0) {
+      query.limit(limit);
+    }
+
+    const orders = await query.lean();
 
     return NextResponse.json({ orders });
   } catch (error: any) {
@@ -28,6 +36,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
 
 
 

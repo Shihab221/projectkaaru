@@ -13,40 +13,13 @@ import {
   Plus,
   ArrowRight,
   BarChart3,
+  Clock,
+  CheckCircle,
+  Truck,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
-
-const stats = [
-  {
-    title: "Total Products",
-    value: "124",
-    change: "+12%",
-    icon: Package,
-    color: "bg-blue-500",
-  },
-  {
-    title: "Total Orders",
-    value: "456",
-    change: "+8%",
-    icon: ShoppingCart,
-    color: "bg-green-500",
-  },
-  {
-    title: "Total Customers",
-    value: "1,234",
-    change: "+15%",
-    icon: Users,
-    color: "bg-purple-500",
-  },
-  {
-    title: "Revenue",
-    value: "৳125,000",
-    change: "+23%",
-    icon: DollarSign,
-    color: "bg-primary",
-  },
-];
+import { formatPrice } from "@/lib/utils";
 
 const quickActions = [
   {
@@ -81,12 +54,147 @@ export default function AdminDashboard() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const authInitialized = useAppSelector(selectAuthInitialized);
 
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [stats, setStats] = useState([
+    {
+      title: "Total Products",
+      value: "0",
+      change: "0%",
+      icon: Package,
+      color: "bg-blue-500",
+    },
+    {
+      title: "Total Orders",
+      value: "0",
+      change: "0%",
+      icon: ShoppingCart,
+      color: "bg-green-500",
+    },
+    {
+      title: "Total Customers",
+      value: "0",
+      change: "0%",
+      icon: Users,
+      color: "bg-purple-500",
+    },
+    {
+      title: "Revenue",
+      value: "৳0",
+      change: "0%",
+      icon: DollarSign,
+      color: "bg-primary",
+    },
+  ]);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+
   useEffect(() => {
     // Only redirect after auth has been fully initialized
     if (authInitialized && (!isAuthenticated || !isAdmin)) {
       router.replace("/auth?redirect=/admin");
     }
   }, [authInitialized, isAuthenticated, isAdmin, router]);
+
+  useEffect(() => {
+    if (authInitialized && isAuthenticated && isAdmin) {
+      fetchRecentOrders();
+      fetchStats();
+    }
+  }, [authInitialized, isAuthenticated, isAdmin]);
+
+  const fetchRecentOrders = async () => {
+    setIsLoadingOrders(true);
+    try {
+      const res = await fetch("/api/admin/orders?limit=5");
+      const data = await res.json();
+      if (res.ok) {
+        setRecentOrders(data.orders || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch recent orders:", error);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const res = await fetch("/api/admin/stats");
+      const data = await res.json();
+      if (res.ok) {
+        setStats([
+          {
+            title: "Total Products",
+            value: data.totalProducts?.toString() || "0",
+            change: data.productsChange || "0%",
+            icon: Package,
+            color: "bg-blue-500",
+          },
+          {
+            title: "Total Orders",
+            value: data.totalOrders?.toString() || "0",
+            change: data.ordersChange || "0%",
+            icon: ShoppingCart,
+            color: "bg-green-500",
+          },
+          {
+            title: "Total Customers",
+            value: data.totalCustomers?.toString() || "0",
+            change: data.customersChange || "0%",
+            icon: Users,
+            color: "bg-purple-500",
+          },
+          {
+            title: "Revenue",
+            value: `৳${data.totalRevenue?.toLocaleString() || "0"}`,
+            change: data.revenueChange || "0%",
+            icon: DollarSign,
+            color: "bg-primary",
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return Clock;
+      case "confirmed":
+      case "processing":
+        return CheckCircle;
+      case "shipped":
+        return Truck;
+      case "delivered":
+        return CheckCircle;
+      default:
+        return Clock;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "text-yellow-600 bg-yellow-100";
+      case "confirmed":
+        return "text-blue-600 bg-blue-100";
+      case "processing":
+        return "text-indigo-600 bg-indigo-100";
+      case "shipped":
+        return "text-purple-600 bg-purple-100";
+      case "delivered":
+        return "text-green-600 bg-green-100";
+      case "cancelled":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
 
   // Show loading until auth is initialized
   if (!authInitialized) {
@@ -133,15 +241,25 @@ export default function AdminDashboard() {
                 <div
                   className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center`}
                 >
-                  <stat.icon className="w-6 h-6 text-white" />
+                  {isLoadingStats ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <stat.icon className="w-6 h-6 text-white" />
+                  )}
                 </div>
-                <span className="text-sm font-medium text-green-500 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4" />
-                  {stat.change}
-                </span>
+                {!isLoadingStats && (
+                  <span className="text-sm font-medium text-green-500 flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4" />
+                    {stat.change}
+                  </span>
+                )}
               </div>
               <h3 className="text-gray-500 text-sm mb-1">{stat.title}</h3>
-              <p className="text-2xl font-bold text-secondary">{stat.value}</p>
+              {isLoadingStats ? (
+                <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+              ) : (
+                <p className="text-2xl font-bold text-secondary">{stat.value}</p>
+              )}
             </motion.div>
           ))}
         </div>
@@ -189,11 +307,64 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="p-6">
-            <div className="text-center py-8 text-gray-500">
-              <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No orders yet</p>
-              <p className="text-sm mt-1">Orders will appear here when customers make purchases</p>
-            </div>
+            {isLoadingOrders ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 animate-pulse">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  </div>
+                ))}
+              </div>
+            ) : recentOrders.length > 0 ? (
+              <div className="space-y-4">
+                {recentOrders.slice(0, 5).map((order, index) => {
+                  const StatusIcon = getStatusIcon(order.status);
+                  return (
+                    <motion.div
+                      key={order._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(order.status)}`}>
+                        <StatusIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-secondary text-sm">
+                          Order #{order.orderNumber}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {order.shippingAddress?.name} • {order.items?.length} item{order.items?.length !== 1 ? 's' : ''}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-secondary">
+                          ৳{order.total?.toLocaleString()}
+                        </p>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No orders yet</p>
+                <p className="text-sm mt-1">Orders will appear here when customers make purchases</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
