@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Facebook, Instagram, Linkedin, MessageCircle, Mail, Phone, MapPin } from "lucide-react";
 import { SOCIAL_LINKS, NAV_LINKS, APP_NAME } from "@/lib/constants";
+import Image from "next/image";
 
 const footerLinks = {
   shop: [
@@ -13,7 +14,6 @@ const footerLinks = {
     { label: "On Sale", href: "/products?onSale=true" },
   ],
   company: [
-    { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Custom Orders", href: "/custom" },
     { label: "FAQ", href: "/faq" },
@@ -35,12 +35,12 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">K</span>
-              </div>
-              <span className="text-xl font-bold">
-                Project<span className="text-primary">Kaaru</span>
-              </span>
+            <Image 
+              src="/Logo Web.png"
+              alt="ProjectKaaru Logo"
+              width={80}
+              height={80}
+            />
             </Link>
             <p className="text-gray-400 text-sm mb-6 max-w-md">
               Custom 3D Printed Wonders - From home decor to personalized keychains, 
@@ -61,11 +61,11 @@ export function Footer() {
                 className="flex items-center gap-3 text-gray-400 hover:text-primary transition-colors"
               >
                 <Phone className="w-4 h-4" />
-                +880 1712-345678
+                +880 1613-371875
               </a>
               <div className="flex items-start gap-3 text-gray-400">
                 <MapPin className="w-4 h-4 mt-0.5" />
-                <span>Dhaka, Bangladesh</span>
+                <span>Khulna, Bangladesh</span>
               </div>
             </div>
 

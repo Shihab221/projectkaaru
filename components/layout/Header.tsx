@@ -25,6 +25,7 @@ import {
 import { NAV_LINKS, APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -74,12 +75,12 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">K</span>
-            </div>
-            <span className="text-xl font-bold text-secondary hidden sm:block">
-              Project<span className="text-primary">Kaaru</span>
-            </span>
+            <Image 
+              src="/Website logo.png"
+              alt="ProjectKaaru Logo"
+              width={200}
+              height={100}
+            />
           </Link>
 
           {/* Desktop Navigation */}
