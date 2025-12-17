@@ -23,6 +23,7 @@ import {
   selectCurrentProduct,
   selectRelatedProducts,
   selectProductsLoading,
+  selectProductsError,
   clearCurrentProduct,
 } from "@/redux/slices/productSlice";
 import { addToCart, openCart } from "@/redux/slices/cartSlice";
@@ -39,21 +40,57 @@ export default function ProductDetailPage() {
   const product = useAppSelector(selectCurrentProduct);
   const relatedProducts = useAppSelector(selectRelatedProducts);
   const isLoading = useAppSelector(selectProductsLoading);
+  const error = useAppSelector(selectProductsError);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedBackgroundColor, setSelectedBackgroundColor] = useState<string | null>(null);
   const [selectedBorderColor, setSelectedBorderColor] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [hasShownError, setHasShownError] = useState(false);
+
+  const handleManualRetry = () => {
+    if (slug) {
+      setRetryCount(0);
+      setHasShownError(false);
+      dispatch(fetchProduct(slug as string));
+    }
+  };
 
   useEffect(() => {
     if (slug) {
       dispatch(fetchProduct(slug as string));
+      setRetryCount(0);
+      setHasShownError(false);
     }
     return () => {
       dispatch(clearCurrentProduct());
     };
   }, [dispatch, slug]);
+
+  // Retry logic for failed requests
+  useEffect(() => {
+    if (error && !isLoading && !hasShownError && retryCount < 3) {
+      setIsRetrying(true);
+      const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
+
+      const timer = setTimeout(() => {
+        if (slug) {
+          setRetryCount(prev => prev + 1);
+          dispatch(fetchProduct(slug as string));
+        }
+      }, retryDelay);
+
+      return () => clearTimeout(timer);
+    } else if (error && !isLoading && retryCount >= 3) {
+      setHasShownError(true);
+      setIsRetrying(false);
+    } else if (!error) {
+      setIsRetrying(false);
+    }
+  }, [error, isLoading, retryCount, slug, dispatch, hasShownError]);
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0) {
@@ -145,7 +182,7 @@ export default function ProductDetailPage() {
     router.push("/checkout");
   };
 
-  if (isLoading) {
+  if (isLoading || isRetrying) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container-custom py-8">
@@ -158,12 +195,73 @@ export default function ProductDetailPage() {
               <div className="h-32 bg-gray-200 rounded animate-pulse" />
             </div>
           </div>
+          {isRetrying && (
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center gap-2 text-sm text-gray-600">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                Retrying... ({retryCount}/3)
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!product) {
+  // Show error state if we've exhausted retries or it's a definitive error
+  if (hasShownError || (error && !isLoading && !product)) {
+    const isNotFoundError = error?.includes("not found") || error?.includes("404");
+    const isNetworkError = error?.includes("Network error") || error?.includes("Failed to fetch");
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-secondary mb-2">
+            {isNotFoundError ? "Product Not Found" : "Unable to Load Product"}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {isNotFoundError
+              ? "The product you're looking for doesn't exist or has been removed."
+              : isNetworkError
+              ? "There was a network issue. Please check your connection and try again."
+              : "We encountered an error while loading this product. Please try again later."
+            }
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                if (slug) {
+                  setRetryCount(0);
+                  setHasShownError(false);
+                  dispatch(fetchProduct(slug as string));
+                }
+              }}
+              className="btn btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading..." : "Try Again"}
+            </button>
+            <Link href="/products" className="btn btn-secondary">
+              Browse Products
+            </Link>
+          </div>
+          {retryCount > 0 && !isNotFoundError && (
+            <p className="text-xs text-gray-500 mt-4">
+              Retried {retryCount} time{retryCount > 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // If we get here without a product but no error, it means the product truly doesn't exist
+  if (!product && !isLoading && !error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -182,13 +280,29 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-background">
       <div className="container-custom py-6 md:py-8">
         {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-500 hover:text-secondary mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to products
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to products
+          </button>
+
+          {/* Manual retry button - only show if there was an error */}
+          {hasShownError && (
+            <button
+              onClick={handleManualRetry}
+              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+              disabled={isLoading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Retry
+            </button>
+          )}
+        </div>
 
         {/* Product Section */}
         <div

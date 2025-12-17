@@ -132,16 +132,32 @@ export const fetchProduct = createAsyncThunk(
   "products/fetchProduct",
   async (slug: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/products/${slug}`);
-      const data = await response.json();
+      const response = await fetch(`/api/products/${slug}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
 
       if (!response.ok) {
-        return rejectWithValue(data.error || "Failed to fetch product");
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          return rejectWithValue("Product not found");
+        } else if (response.status >= 500) {
+          return rejectWithValue("Server error. Please try again.");
+        } else {
+          return rejectWithValue(errorData.error || `Error ${response.status}`);
+        }
       }
 
+      const data = await response.json();
       return data;
-    } catch (error) {
-      return rejectWithValue("Network error. Please try again.");
+    } catch (error: any) {
+      // Check if it's a network error
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return rejectWithValue("Network error. Please check your connection and try again.");
+      }
+      return rejectWithValue("An unexpected error occurred. Please try again.");
     }
   }
 );
