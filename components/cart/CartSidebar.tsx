@@ -14,6 +14,7 @@ import {
   updateQuantity,
 } from "@/redux/slices/cartSlice";
 import { formatPrice } from "@/lib/utils";
+import { KEYCHAIN_COLORS } from "@/lib/constants";
 
 export function CartSidebar() {
   const dispatch = useAppDispatch();
@@ -75,7 +76,7 @@ export function CartSidebar() {
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div
-                      key={`${item._id}-${item.color}-${item.font}`}
+                      key={`${item._id}-${item.size}-${item.selectedBackgroundColor}-${item.selectedBorderColor}`}
                       className="flex gap-4 p-3 bg-gray-50 rounded-lg"
                     >
                       {/* Product Image */}
@@ -104,15 +105,29 @@ export function CartSidebar() {
                           {item.name}
                         </Link>
 
-                        {item.color && (
+                        {item.size && (
                           <p className="text-xs text-gray-500 mt-0.5">
-                            Color: {item.color}
+                            Size: {item.size}
                           </p>
                         )}
-                        {item.font && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Font: {item.font}
-                          </p>
+
+                        {(item.selectedBackgroundColor || item.selectedBorderColor) && (
+                          <div className="text-xs text-gray-600 mt-1 flex items-center gap-1 flex-wrap">
+                            <span className="font-medium">🎨</span>
+                            {item.selectedBackgroundColor && (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.selectedBackgroundColor }} />
+                                {KEYCHAIN_COLORS.find(c => c.hex === item.selectedBackgroundColor)?.name}
+                              </span>
+                            )}
+                            {item.selectedBackgroundColor && item.selectedBorderColor && <span>/</span>}
+                            {item.selectedBorderColor && (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.selectedBorderColor }} />
+                                {KEYCHAIN_COLORS.find(c => c.hex === item.selectedBorderColor)?.name}
+                              </span>
+                            )}
+                          </div>
                         )}
 
                         <p className="text-primary font-semibold mt-1">
@@ -127,8 +142,9 @@ export function CartSidebar() {
                                 dispatch(
                                   updateQuantity({
                                     _id: item._id,
-                                    color: item.color,
-                                    font: item.font,
+                                    size: item.size,
+                                    selectedBackgroundColor: item.selectedBackgroundColor,
+                                    selectedBorderColor: item.selectedBorderColor,
                                     quantity: item.quantity - 1,
                                   })
                                 )
@@ -146,8 +162,9 @@ export function CartSidebar() {
                                 dispatch(
                                   updateQuantity({
                                     _id: item._id,
-                                    color: item.color,
-                                    font: item.font,
+                                    size: item.size,
+                                    selectedBackgroundColor: item.selectedBackgroundColor,
+                                    selectedBorderColor: item.selectedBorderColor,
                                     quantity: item.quantity + 1,
                                   })
                                 )
@@ -164,8 +181,9 @@ export function CartSidebar() {
                               dispatch(
                                 removeFromCart({
                                   _id: item._id,
-                                  color: item.color,
-                                  font: item.font,
+                                  size: item.size,
+                                  selectedBackgroundColor: item.selectedBackgroundColor,
+                                  selectedBorderColor: item.selectedBorderColor,
                                 })
                               )
                             }

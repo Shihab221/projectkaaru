@@ -10,8 +10,9 @@ export interface CartItem {
   image: string;
   quantity: number;
   stock: number;
-  color?: string;
-  font?: string;
+  size?: string;
+  selectedBackgroundColor?: string; // Customer's selected background color
+  selectedBorderColor?: string; // Customer's selected border color
 }
 
 // Cart state interface
@@ -58,8 +59,9 @@ const cartSlice = createSlice({
       const existingIndex = state.items.findIndex(
         (item) =>
           item._id === action.payload._id &&
-          item.color === action.payload.color &&
-          item.font === action.payload.font
+          item.size === action.payload.size &&
+          item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
+          item.selectedBorderColor === action.payload.selectedBorderColor
       );
 
       if (existingIndex >= 0) {
@@ -75,10 +77,13 @@ const cartSlice = createSlice({
     },
 
     // Remove item from cart
-    removeFromCart: (state, action: PayloadAction<{ _id: string; color?: string; font?: string }>) => {
+    removeFromCart: (state, action: PayloadAction<{ _id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string }>) => {
       state.items = state.items.filter(
         (item) =>
-          !(item._id === action.payload._id && item.color === action.payload.color && item.font === action.payload.font)
+          !(item._id === action.payload._id &&
+            item.size === action.payload.size &&
+            item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
+            item.selectedBorderColor === action.payload.selectedBorderColor)
       );
       saveCartToStorage(state.items);
     },
@@ -86,13 +91,14 @@ const cartSlice = createSlice({
     // Update item quantity
     updateQuantity: (
       state,
-      action: PayloadAction<{ _id: string; color?: string; font?: string; quantity: number }>
+      action: PayloadAction<{ _id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string; quantity: number }>
     ) => {
       const item = state.items.find(
         (item) =>
           item._id === action.payload._id &&
-          item.color === action.payload.color &&
-          item.font === action.payload.font
+          item.size === action.payload.size &&
+          item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
+          item.selectedBorderColor === action.payload.selectedBorderColor
       );
 
       if (item) {

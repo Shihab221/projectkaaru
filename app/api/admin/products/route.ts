@@ -24,19 +24,32 @@ export async function POST(request: NextRequest) {
       discountedPrice,
       category,
       subcategory,
-      images,
+      images: uploadedImages,
       stock,
-      colors,
-      fonts,
+      sizes,
+      backgroundColors,
+      borderColors,
       isTopProduct,
     } = body;
 
     // Validate required fields
-    if (!name || !description || !price || !category || !stock) {
+    if (!name || !description || !price || !category) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Validate that if sizes are provided, they must have required fields
+    if (sizes && sizes.length > 0) {
+      for (const size of sizes) {
+        if (!size.name || !size.price) {
+          return NextResponse.json(
+            { error: "Each size must have a name and price" },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Generate slug
@@ -48,8 +61,21 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${Date.now()}`;
     }
 
-    // Create product
-    const product = await Product.create({
+    // Convert base64 image data back to Buffer for MongoDB storage
+    const processedImages = (uploadedImages || []).map((img: any) => {
+      if (img && img.data && typeof img.data === 'string') {
+        // Convert base64 string back to Buffer
+        return {
+          data: Buffer.from(img.data, 'base64'),
+          contentType: img.contentType,
+          filename: img.filename,
+        };
+      }
+      return img;
+    });
+
+    // Prepare product data
+    const productData: any = {
       name,
       slug,
       description,
@@ -58,12 +84,41 @@ export async function POST(request: NextRequest) {
       discountedPrice: discountedPrice || undefined,
       category,
       subcategory,
-      images: images || [],
-      stock,
-      colors: colors || [],
-      fonts: fonts || [],
+      images: processedImages,
       isTopProduct: isTopProduct || false,
+    };
+
+    // Handle sizes and stock
+    if (sizes && sizes.length > 0) {
+      // If sizes are provided, use them and ignore single stock
+      productData.sizes = sizes.map((size: any) => ({
+        name: size.name,
+        price: size.price,
+        discountedPrice: size.discountedPrice || undefined,
+        stock: size.stock !== undefined ? size.stock : 1000,
+      }));
+      // Set single stock to sum of all sizes for backward compatibility
+      productData.stock = productData.sizes.reduce((total: number, size: any) => total + (size.stock || 1000), 0);
+    } else {
+      // If no sizes, use single stock (default to 1000 if not provided)
+      productData.stock = stock !== undefined ? stock : 1000;
+    }
+
+    // Add colors if provided
+    if (backgroundColors && backgroundColors.length > 0) {
+      productData.backgroundColors = backgroundColors;
+    }
+    if (borderColors && borderColors.length > 0) {
+      productData.borderColors = borderColors;
+    }
+
+    // Create product
+    console.log('Creating product with data:', {
+      ...productData,
+      images: productData.images ? `${productData.images.length} images` : 'no images'
     });
+    const product = await Product.create(productData);
+    console.log('Product created with ID:', product._id);
 
     return NextResponse.json(
       { message: "Product created successfully", product },

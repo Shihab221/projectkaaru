@@ -15,7 +15,60 @@ import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectAuthInitialized, selectIsAuthenticated } from "@/redux/slices/authSlice";
 import toast from "react-hot-toast";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
-import { FONT_OPTIONS } from "@/lib/constants";
+// Color selector component for keychains (multiple selection)
+const ColorSelector = ({ selectedColors, onColorsChange, label, colors }: {
+  selectedColors: string[];
+  onColorsChange: (colors: string[]) => void;
+  label: string;
+  colors: Array<{ name: string; hex: string }>
+}) => {
+  const toggleColor = (colorHex: string) => {
+    if (selectedColors.includes(colorHex)) {
+      // Remove color if already selected
+      onColorsChange(selectedColors.filter(c => c !== colorHex));
+    } else {
+      // Add color if not selected
+      onColorsChange([...selectedColors, colorHex]);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-secondary mb-1.5">
+        {label}: {selectedColors.length > 0 ? `${selectedColors.length} selected` : 'None selected'}
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {colors.map((color) => {
+          const isSelected = selectedColors.includes(color.hex);
+          return (
+            <button
+              key={color.name}
+              type="button"
+              onClick={() => toggleColor(color.hex)}
+              className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                isSelected
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
+            >
+              <span
+                className="inline-block w-4 h-4 rounded-full mr-2 border border-gray-300"
+                style={{ backgroundColor: color.hex }}
+              />
+              {color.name}
+              {isSelected && <span className="ml-1">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      {selectedColors.length > 0 && (
+        <div className="mt-2 text-xs text-gray-500">
+          Selected: {selectedColors.map(hex => colors.find(c => c.hex === hex)?.name).join(', ')}
+        </div>
+      )}
+    </div>
+  );
+};
 import Image from "next/image";
 
 interface Category {
@@ -37,6 +90,7 @@ export default function NewProductPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<Array<{ data: string; contentType: string; filename: string }>>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -47,8 +101,9 @@ export default function NewProductPage() {
     subcategory: "",
     stock: "",
     isTopProduct: false,
-    colors: [] as string[],
-    fonts: [] as string[],
+    sizes: [] as Array<{ name: string; price: string; discountedPrice: string; stock: string }>,
+    backgroundColors: [] as string[],
+    borderColors: [] as string[],
     images: [] as string[],
   });
 
@@ -136,7 +191,8 @@ export default function NewProductPage() {
       throw new Error(data.error || "Failed to upload images");
     }
 
-    return data.urls;
+    setUploadedImages(data.images);
+    return data.images;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,13 +200,21 @@ export default function NewProductPage() {
     setIsSubmitting(true);
 
     try {
-      // Upload images first
-      let imageUrls: string[] = [];
+      // Upload images first and get the result directly
+      let uploadedImagesResult: any[] = [];
       if (imageFiles.length > 0) {
         setIsUploading(true);
-        imageUrls = await uploadImages();
+        uploadedImagesResult = await uploadImages();
         setIsUploading(false);
       }
+
+      // Prepare sizes data
+      const sizesData = formData.sizes.length > 0 ? formData.sizes.map(size => ({
+        name: size.name,
+        price: parseFloat(size.price),
+        discountedPrice: size.discountedPrice ? parseFloat(size.discountedPrice) : undefined,
+        stock: size.stock ? parseInt(size.stock) : 1000,
+      })) : undefined;
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -161,10 +225,11 @@ export default function NewProductPage() {
           discountedPrice: formData.discountedPrice
             ? parseFloat(formData.discountedPrice)
             : undefined,
-          stock: parseInt(formData.stock),
-          colors: formData.colors.length > 0 ? formData.colors : undefined,
-          fonts: formData.fonts.length > 0 ? formData.fonts : undefined,
-          images: imageUrls,
+          stock: formData.stock ? parseInt(formData.stock) : undefined,
+          sizes: sizesData,
+          backgroundColors: formData.backgroundColors,
+          borderColors: formData.borderColors,
+          images: uploadedImagesResult,
         }),
       });
 
@@ -184,21 +249,26 @@ export default function NewProductPage() {
     }
   };
 
-  const toggleColor = (color: string) => {
+  const addSize = () => {
     setFormData((prev) => ({
       ...prev,
-      colors: prev.colors.includes(color)
-        ? prev.colors.filter((c) => c !== color)
-        : [...prev.colors, color],
+      sizes: [...prev.sizes, { name: "", price: "", discountedPrice: "", stock: "" }],
     }));
   };
 
-  const toggleFont = (font: string) => {
+  const updateSize = (index: number, field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      fonts: prev.fonts.includes(font)
-        ? prev.fonts.filter((f) => f !== font)
-        : [...prev.fonts, font],
+      sizes: prev.sizes.map((size, i) =>
+        i === index ? { ...size, [field]: value } : size
+      ),
+    }));
+  };
+
+  const removeSize = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      sizes: prev.sizes.filter((_, i) => i !== index),
     }));
   };
 
@@ -294,10 +364,16 @@ export default function NewProductPage() {
               <h2 className="text-lg font-semibold text-secondary mb-4">
                 Pricing & Stock
               </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                {formData.sizes.length > 0
+                  ? "Size-specific pricing will be used. These are fallback values."
+                  : "Set base price and stock. You can also add multiple sizes below."
+                }
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    Price (৳) *
+                    Base Price (৳) *
                   </label>
                   <input
                     type="number"
@@ -315,7 +391,7 @@ export default function NewProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    Discounted Price (৳)
+                    Base Discounted Price (৳)
                   </label>
                   <input
                     type="number"
@@ -332,7 +408,7 @@ export default function NewProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    Stock Quantity *
+                    Base Stock Quantity
                   </label>
                   <input
                     type="number"
@@ -341,13 +417,136 @@ export default function NewProductPage() {
                       setFormData({ ...formData, stock: e.target.value })
                     }
                     className="input"
-                    placeholder="0"
+                    placeholder="1000"
                     min="0"
-                    required
                   />
+                  <p className="text-xs text-gray-500 mt-1">Defaults to 1000 if empty</p>
                 </div>
               </div>
             </div>
+
+            {/* Sizes */}
+            <div>
+              <h2 className="text-lg font-semibold text-secondary mb-4">
+                Product Sizes (Optional)
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Add different sizes with individual prices and stock levels. Leave empty to use base pricing.
+              </p>
+
+              {formData.sizes.map((size, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-secondary">Size {index + 1}</h3>
+                    <button
+                      type="button"
+                      onClick={() => removeSize(index)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-secondary mb-1.5">
+                        Size Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={size.name}
+                        onChange={(e) => updateSize(index, "name", e.target.value)}
+                        className="input"
+                        placeholder="Small"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary mb-1.5">
+                        Price (৳) *
+                      </label>
+                      <input
+                        type="number"
+                        value={size.price}
+                        onChange={(e) => updateSize(index, "price", e.target.value)}
+                        className="input"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary mb-1.5">
+                        Discounted Price (৳)
+                      </label>
+                      <input
+                        type="number"
+                        value={size.discountedPrice}
+                        onChange={(e) => updateSize(index, "discountedPrice", e.target.value)}
+                        className="input"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary mb-1.5">
+                        Stock
+                      </label>
+                      <input
+                        type="number"
+                        value={size.stock}
+                        onChange={(e) => updateSize(index, "stock", e.target.value)}
+                        className="input"
+                        placeholder="1000"
+                        min="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Defaults to 1000</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addSize}
+                className="btn btn-secondary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Size
+              </button>
+            </div>
+
+            {/* Colors (for keychains only) */}
+            {isKeychain && (
+              <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 bg-primary/5">
+                <h2 className="text-lg font-semibold text-secondary mb-2">
+                  🎨 Keychain Color Options for Customers
+                </h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select which colors customers can choose from when ordering this keychain. 
+                  These colors will appear as options on the product page.
+                </p>
+                <div className="space-y-4">
+                  <ColorSelector
+                    label="Background Colors (customers will choose ONE)"
+                    selectedColors={formData.backgroundColors}
+                    onColorsChange={(colors) => setFormData({ ...formData, backgroundColors: colors })}
+                    colors={KEYCHAIN_COLORS}
+                  />
+                  <ColorSelector
+                    label="Border Colors (customers will choose ONE)"
+                    selectedColors={formData.borderColors}
+                    onColorsChange={(colors) => setFormData({ ...formData, borderColors: colors })}
+                    colors={KEYCHAIN_COLORS}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Category */}
             <div>
@@ -404,60 +603,6 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Colors (for keychains) */}
-            {isKeychain && (
-              <div>
-                <h2 className="text-lg font-semibold text-secondary mb-4">
-                  Available Colors
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {KEYCHAIN_COLORS.map((color) => (
-                    <button
-                      key={color.name}
-                      type="button"
-                      onClick={() => toggleColor(color.name)}
-                      className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                        formData.colors.includes(color.name)
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-gray-200 text-gray-600 hover:border-gray-300"
-                      }`}
-                    >
-                      <span
-                        className="inline-block w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      {color.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Fonts (for keychains and nameplates) */}
-            {isKeychain && (
-              <div>
-                <h2 className="text-lg font-semibold text-secondary mb-4">
-                  Available Fonts
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {FONT_OPTIONS.map((font) => (
-                    <button
-                      key={font}
-                      type="button"
-                      onClick={() => toggleFont(font)}
-                      className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                        formData.fonts.includes(font)
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-gray-200 text-gray-600 hover:border-gray-300"
-                      }`}
-                      style={{ fontFamily: font }}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Top Product */}
             <div className="flex items-center gap-3">

@@ -18,7 +18,7 @@ interface ProductCardProps {
     shortDescription?: string;
     price: number;
     discountedPrice?: number;
-    images: string[];
+    images: any[]; // Array of image objects from MongoDB
     stock: number;
     averageRating?: number;
     numReviews?: number;
@@ -50,7 +50,7 @@ export function ProductCard({ product }: ProductCardProps) {
         slug: product.slug,
         price: product.price,
         discountedPrice: product.discountedPrice,
-        image: product.images[0] || "",
+        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
         quantity: 1,
         stock: product.stock,
       })
@@ -75,7 +75,7 @@ export function ProductCard({ product }: ProductCardProps) {
         slug: product.slug,
         price: product.price,
         discountedPrice: product.discountedPrice,
-        image: product.images[0] || "",
+        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
         quantity: 1,
         stock: product.stock,
       })
@@ -92,9 +92,9 @@ export function ProductCard({ product }: ProductCardProps) {
       <Link href={`/products/${product.slug}`}>
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-gray-100">
-          {product.images[0] ? (
+          {product.images && product.images.length > 0 && product._id ? (
             <Image
-              src={product.images[0]}
+              src={`/api/images/${product._id}/0`}
               alt={product.name}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"

@@ -53,20 +53,35 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (product.stock < item.quantity) {
+      // Check stock based on size or default stock
+      let availableStock = product.stock || 1000;
+      if (item.size && product.sizes) {
+        const sizeData = product.sizes.find(s => s.name === item.size);
+        if (sizeData) {
+          availableStock = sizeData.stock || 1000;
+        }
+      }
+
+      if (availableStock < item.quantity) {
         return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}` },
+          { error: `Insufficient stock for ${product.name}${item.size ? ` (${item.size})` : ''}` },
           { status: 400 }
         );
       }
 
-      // Update product stock and sold count
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: {
-          stock: -item.quantity,
-          sold: item.quantity,
-        },
-      });
+      // Update stock based on size
+      if (item.size && product.sizes) {
+        const sizeIndex = product.sizes.findIndex(s => s.name === item.size);
+        if (sizeIndex !== -1) {
+          product.sizes[sizeIndex].stock = (product.sizes[sizeIndex].stock || 1000) - item.quantity;
+        }
+      } else {
+        product.stock = (product.stock || 1000) - item.quantity;
+      }
+
+      // Update sold count
+      product.sold += item.quantity;
+      await product.save();
     }
 
     // Generate unique order number

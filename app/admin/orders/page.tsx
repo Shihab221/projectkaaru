@@ -25,6 +25,7 @@ import {
 } from "@/redux/slices/authSlice";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { KEYCHAIN_COLORS } from "@/lib/constants";
 
 interface Order {
   _id: string;
@@ -39,8 +40,9 @@ interface Order {
     image: string;
     price: number;
     quantity: number;
-    color?: string;
-    font?: string;
+    size?: string;
+    backgroundColor?: string;
+    borderColor?: string;
   }[];
   shippingAddress: {
     name: string;
@@ -426,13 +428,35 @@ export default function AdminOrdersPage() {
                         />
                         <div className="flex-1">
                           <p className="font-medium text-secondary">{item.name}</p>
-                          {item.color && (
-                            <p className="text-sm text-gray-500">Color: {item.color}</p>
+                          {item.size && (
+                            <p className="text-sm text-gray-500">Size: {item.size}</p>
                           )}
-                          {item.font && (
-                            <p className="text-sm text-gray-500">Font: {item.font}</p>
+                          {(item.backgroundColor || item.borderColor) && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <p className="text-xs font-semibold text-yellow-800 mb-1">🎨 Customer's Keychain Colors:</p>
+                              <div className="flex items-center gap-3">
+                                {item.backgroundColor && (
+                                  <div className="flex items-center gap-1">
+                                    <span
+                                      className="inline-block w-4 h-4 rounded-full border border-gray-400"
+                                      style={{ backgroundColor: item.backgroundColor }}
+                                    />
+                                    <span className="text-sm text-gray-700">BG: {KEYCHAIN_COLORS.find(c => c.hex === item.backgroundColor)?.name || item.backgroundColor}</span>
+                                  </div>
+                                )}
+                                {item.borderColor && (
+                                  <div className="flex items-center gap-1">
+                                    <span
+                                      className="inline-block w-4 h-4 rounded-full border border-gray-400"
+                                      style={{ backgroundColor: item.borderColor }}
+                                    />
+                                    <span className="text-sm text-gray-700">Border: {KEYCHAIN_COLORS.find(c => c.hex === item.borderColor)?.name || item.borderColor}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
-                          <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                          <p className="text-sm text-gray-500 mt-1">Qty: {item.quantity}</p>
                         </div>
                         <p className="font-semibold text-secondary">
                           ৳{(item.price * item.quantity).toLocaleString()}
@@ -506,6 +530,9 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+
+
 
 
 

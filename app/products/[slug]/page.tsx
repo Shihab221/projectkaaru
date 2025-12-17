@@ -28,6 +28,7 @@ import {
 import { addToCart, openCart } from "@/redux/slices/cartSlice";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
 
 export default function ProductDetailPage() {
@@ -41,8 +42,9 @@ export default function ProductDetailPage() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedBackgroundColor, setSelectedBackgroundColor] = useState<string | null>(null);
+  const [selectedBorderColor, setSelectedBorderColor] = useState<string | null>(null);
 
   useEffect(() => {
     if (slug) {
@@ -54,37 +56,69 @@ export default function ProductDetailPage() {
   }, [dispatch, slug]);
 
   useEffect(() => {
-    if (product?.colors && product.colors.length > 0) {
-      setSelectedColor(product.colors[0]);
-    }
-    if (product?.fonts && product.fonts.length > 0) {
-      setSelectedFont(product.fonts[0]);
+    if (product?.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0].name);
     }
   }, [product]);
 
-  const isOnSale =
-    product?.discountedPrice && product.discountedPrice < product.price;
+  // Get current price based on selected size or default
+  const getCurrentPrice = () => {
+    if (selectedSize && product?.sizes) {
+      const sizeData = product.sizes.find(s => s.name === selectedSize);
+      if (sizeData) {
+        return {
+          price: sizeData.price,
+          discountedPrice: sizeData.discountedPrice,
+        };
+      }
+    }
+    return {
+      price: product?.price || 0,
+      discountedPrice: product?.discountedPrice,
+    };
+  };
+
+  const currentPrice = getCurrentPrice();
+  const isOnSale = currentPrice.discountedPrice && currentPrice.discountedPrice < currentPrice.price;
   const discount = isOnSale
-    ? calculateDiscount(product.price, product.discountedPrice!)
+    ? calculateDiscount(currentPrice.price, currentPrice.discountedPrice!)
     : 0;
+
+  // Get stock for selected size
+  const getCurrentStock = () => {
+    if (selectedSize && product?.sizes) {
+      const sizeData = product.sizes.find(s => s.name === selectedSize);
+      if (sizeData) {
+        return sizeData.stock || 1000;
+      }
+    }
+    return product?.stock || 1000;
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (product.stock < 1) {
+    if (getCurrentStock() < 1) {
       toast.error("Product is out of stock");
       return;
     }
 
-    // Check if color is required but not selected (for keychains)
-    if (product.colors && product.colors.length > 0 && !selectedColor) {
-      toast.error("Please select a color");
+    // Check if size is required but not selected
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast.error("Please select a size");
       return;
     }
-    // Check if font is required but not selected
-    if (product.fonts && product.fonts.length > 0 && !selectedFont) {
-      toast.error("Please select a font");
-      return;
+
+    // Check if keychain colors are required but not selected
+    if (product.category?.slug === 'key-chains') {
+      if (product.backgroundColors && product.backgroundColors.length > 0 && !selectedBackgroundColor) {
+        toast.error("Please select a background color for your keychain");
+        return;
+      }
+      if (product.borderColors && product.borderColors.length > 0 && !selectedBorderColor) {
+        toast.error("Please select a border color for your keychain");
+        return;
+      }
     }
 
     dispatch(
@@ -92,13 +126,14 @@ export default function ProductDetailPage() {
         _id: product._id,
         name: product.name,
         slug: product.slug,
-        price: product.price,
-        discountedPrice: product.discountedPrice,
-        image: product.images[0] || "",
+        price: currentPrice.price,
+        discountedPrice: currentPrice.discountedPrice,
+        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
         quantity,
-        stock: product.stock,
-        color: selectedColor || undefined,
-        font: selectedFont || undefined,
+        stock: getCurrentStock(),
+        size: selectedSize || undefined,
+        selectedBackgroundColor: selectedBackgroundColor || undefined,
+        selectedBorderColor: selectedBorderColor || undefined,
       })
     );
     dispatch(openCart());
@@ -156,7 +191,9 @@ export default function ProductDetailPage() {
         </button>
 
         {/* Product Section */}
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+        <div
+          className="grid md:grid-cols-2 gap-8 md:gap-12 rounded-2xl p-6 md:p-8 bg-white border-2 border-gray-200"
+        >
           {/* Images */}
           <div>
             <motion.div
@@ -164,9 +201,9 @@ export default function ProductDetailPage() {
               animate={{ opacity: 1 }}
               className="aspect-square rounded-2xl overflow-hidden bg-gray-100 relative"
             >
-              {product.images[selectedImage] ? (
+              {product.images && product.images.length > selectedImage && product._id ? (
                 <Image
-                  src={product.images[selectedImage]}
+                  src={`/api/images/${product._id}/${selectedImage}`}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -195,7 +232,7 @@ export default function ProductDetailPage() {
             </motion.div>
 
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex gap-3 mt-4">
                 {product.images.map((image, index) => (
                   <button
@@ -207,13 +244,19 @@ export default function ProductDetailPage() {
                         : "border-transparent hover:border-gray-300"
                     }`}
                   >
-                    <Image
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
-                      width={80}
-                      height={80}
-                      className="w-full h-full object-cover"
-                    />
+                    {product._id ? (
+                      <Image
+                        src={`/api/images/${product._id}/${index}`}
+                        alt={`${product.name} ${index + 1}`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <ShoppingCart className="w-6 h-6" />
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -254,12 +297,12 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
               <span className="text-3xl font-bold text-primary">
-                {formatPrice(product.discountedPrice || product.price)}
+                {formatPrice(currentPrice.discountedPrice || currentPrice.price)}
               </span>
               {isOnSale && (
                 <>
                   <span className="text-xl text-gray-400 line-through">
-                    {formatPrice(product.price)}
+                    {formatPrice(currentPrice.price)}
                   </span>
                   <span className="badge badge-success">Save {discount}%</span>
                 </>
@@ -272,52 +315,120 @@ export default function ProductDetailPage() {
             </p>
 
 
-            {/* Color Selection (for keychains) */}
-            {product.colors && product.colors.length > 0 && (
+            {/* Size Selection */}
+            {product.sizes && product.sizes.length > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-secondary mb-3">
-                  Select Color: <span className="text-primary">{selectedColor}</span>
+                  Select Size: <span className="text-primary">{selectedSize}</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.colors.map((color) => (
+                  {product.sizes.map((size) => (
                     <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
+                      key={size.name}
+                      onClick={() => setSelectedSize(size.name)}
                       className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                        selectedColor === color
+                        selectedSize === size.name
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-gray-200 text-gray-600 hover:border-gray-300"
                       }`}
                     >
-                      {color}
+                      {size.name} - ৳{size.discountedPrice || size.price}
+                      {size.discountedPrice && size.discountedPrice < size.price && (
+                        <span className="ml-2 text-xs line-through text-gray-400">
+                          ৳{size.price}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Font Selection (for keychains) */}
-            {product.fonts && product.fonts.length > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-secondary mb-3">
-                  Select Font: <span className="text-primary">{selectedFont}</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {product.fonts.map((font) => (
-                    <button
-                      key={font}
-                      onClick={() => setSelectedFont(font)}
-                      className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                        selectedFont === font
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-gray-200 text-gray-600 hover:border-gray-300"
-                      }`}
-                      style={{ fontFamily: font }}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
+            {/* Color Selection (for keychains only - customer chooses their keychain colors) */}
+            {product.category?.slug === 'key-chains' && 
+             ((product.backgroundColors && product.backgroundColors.length > 0) || 
+              (product.borderColors && product.borderColors.length > 0)) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-secondary mb-3">🎨 Choose Your Keychain Colors</h3>
+                <p className="text-xs text-gray-500 mb-4">Select the colors you want for your custom keychain</p>
+
+                {/* Background Color Selection */}
+                {product.backgroundColors && product.backgroundColors.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-secondary mb-2">
+                      Keychain Background Color: <span className="text-primary font-semibold">{selectedBackgroundColor ? KEYCHAIN_COLORS.find(c => c.hex === selectedBackgroundColor)?.name : 'Please select'}</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {product.backgroundColors.map((colorHex) => {
+                        const color = KEYCHAIN_COLORS.find(c => c.hex === colorHex);
+                        if (!color) return null;
+                        return (
+                          <button
+                            key={`bg-${colorHex}`}
+                            onClick={() => setSelectedBackgroundColor(colorHex)}
+                            className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                              selectedBackgroundColor === colorHex
+                                ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                                : "border-gray-200 text-gray-600 hover:border-gray-300 bg-white"
+                            }`}
+                          >
+                            <span
+                              className="inline-block w-5 h-5 rounded-full mr-2 border-2 border-gray-300"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            {color.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Border Color Selection */}
+                {product.borderColors && product.borderColors.length > 0 && (
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium text-secondary mb-2">
+                      Keychain Border Color: <span className="text-primary font-semibold">{selectedBorderColor ? KEYCHAIN_COLORS.find(c => c.hex === selectedBorderColor)?.name : 'Please select'}</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {product.borderColors.map((colorHex) => {
+                        const color = KEYCHAIN_COLORS.find(c => c.hex === colorHex);
+                        if (!color) return null;
+                        return (
+                          <button
+                            key={`border-${colorHex}`}
+                            onClick={() => setSelectedBorderColor(colorHex)}
+                            className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                              selectedBorderColor === colorHex
+                                ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                                : "border-gray-200 text-gray-600 hover:border-gray-300 bg-white"
+                            }`}
+                          >
+                            <span
+                              className="inline-block w-5 h-5 rounded-full mr-2 border-2 border-gray-300"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            {color.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color Preview */}
+                {(selectedBackgroundColor || selectedBorderColor) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 mb-2">Your selection preview:</p>
+                    <div 
+                      className="w-16 h-16 rounded-lg"
+                      style={{ 
+                        backgroundColor: selectedBackgroundColor || '#f3f4f6',
+                        border: `3px solid ${selectedBorderColor || '#e5e7eb'}`
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -336,15 +447,15 @@ export default function ProductDetailPage() {
                 <span className="w-12 text-center font-medium">{quantity}</span>
                 <button
                   onClick={() =>
-                    setQuantity(Math.min(product.stock, quantity + 1))
+                    setQuantity(Math.min(getCurrentStock(), quantity + 1))
                   }
                   className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:border-primary transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
                 <span className="text-sm text-gray-500 ml-2">
-                  {product.stock > 0
-                    ? `${product.stock} in stock`
+                  {getCurrentStock() > 0
+                    ? `${getCurrentStock()} in stock`
                     : "Out of stock"}
                 </span>
               </div>
@@ -354,7 +465,7 @@ export default function ProductDetailPage() {
             <div className="flex gap-3 mb-8">
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock < 1}
+                disabled={getCurrentStock() < 1}
                 className="btn btn-secondary flex-1 disabled:opacity-50"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
@@ -362,7 +473,7 @@ export default function ProductDetailPage() {
               </button>
               <button
                 onClick={handleBuyNow}
-                disabled={product.stock < 1}
+                disabled={getCurrentStock() < 1}
                 className="btn btn-primary flex-1 disabled:opacity-50"
               >
                 <Zap className="w-5 h-5 mr-2" />

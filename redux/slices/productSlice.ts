@@ -1,5 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
+// Size interface
+export interface ProductSize {
+  name: string;
+  price: number;
+  discountedPrice?: number;
+  stock?: number;
+}
+
 // Product interface
 export interface Product {
   _id: string;
@@ -16,9 +24,13 @@ export interface Product {
   };
   subcategory?: string;
   images: string[];
-  stock: number;
-  colors?: string[];
-  fonts?: string[];
+  stock?: number;
+  sizes?: ProductSize[];
+  backgroundColors?: string[];
+  borderColors?: string[];
+  // Backward compatibility fields
+  backgroundColor?: string;
+  borderColor?: string;
   isTopProduct: boolean;
   isActive: boolean;
   averageRating: number;

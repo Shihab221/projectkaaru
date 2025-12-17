@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authMiddleware } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,15 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist
-    }
-
-    const uploadedUrls: string[] = [];
+    const uploadedImages: Array<{ data: string; contentType: string; filename: string }> = [];
 
     for (const file of files) {
       if (!file || file.size === 0) continue;
@@ -52,26 +42,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const extension = file.name.split(".").pop() || "jpg";
-      const filename = `${timestamp}-${randomString}.${extension}`;
-
-      // Convert file to buffer and save
+      // Convert file to buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const filePath = path.join(uploadDir, filename);
-      await writeFile(filePath, buffer);
-
-      // Return the URL path (relative to public folder)
-      uploadedUrls.push(`/uploads/${filename}`);
+      // Convert buffer to base64 for JSON serialization
+      uploadedImages.push({
+        data: buffer.toString('base64'),
+        contentType: file.type,
+        filename: file.name,
+      });
     }
 
+    console.log(`Successfully uploaded ${uploadedImages.length} images`);
     return NextResponse.json({
       message: "Files uploaded successfully",
-      urls: uploadedUrls,
+      images: uploadedImages,
     });
   } catch (error: any) {
     console.error("Upload error:", error);

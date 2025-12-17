@@ -9,6 +9,37 @@ export interface IReview {
   createdAt: Date;
 }
 
+// Size interface
+export interface IProductSize {
+  name: string;
+  price: number;
+  discountedPrice?: number;
+  stock?: number; // Optional, defaults to 1000
+}
+
+// Size schema
+const productSizeSchema = new Schema<IProductSize>({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: [0, "Price cannot be negative"],
+  },
+  discountedPrice: {
+    type: Number,
+    min: [0, "Discounted price cannot be negative"],
+  },
+  stock: {
+    type: Number,
+    min: [0, "Stock cannot be negative"],
+    default: 1000,
+  },
+});
+
 // Product interface
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
@@ -21,9 +52,10 @@ export interface IProduct extends Document {
   category: mongoose.Types.ObjectId;
   subcategory?: string;
   images: string[];
-  stock: number;
-  colors?: string[]; // For keychains
-  fonts?: string[]; // For nameplates and keychains
+  stock?: number; // Optional, defaults to 1000 if no sizes, or applies to single size
+  sizes?: IProductSize[]; // Multiple sizes with individual prices/stocks
+  backgroundColors?: string[]; // Array of hex colors for background
+  borderColors?: string[]; // Array of hex colors for borders
   isTopProduct: boolean;
   isActive: boolean;
   reviews: IReview[];
@@ -108,23 +140,34 @@ const productSchema = new Schema<IProduct>(
       type: String,
       trim: true,
     },
-    images: [{
-      type: String,
-      required: true,
-    }],
+    images: [{}], // Can be string URLs (old format) or objects with data/contentType/filename (new format)
     stock: {
       type: Number,
-      required: true,
       min: [0, "Stock cannot be negative"],
-      default: 0,
+      default: 1000,
     },
-    colors: [{
+    sizes: [productSizeSchema],
+    backgroundColors: [{
       type: String,
       trim: true,
+      validate: {
+        validator: function(v: string) {
+          // Validate hex color format
+          return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
+        },
+        message: 'Background color must be a valid hex color (e.g., #FF0000)'
+      }
     }],
-    fonts: [{
+    borderColors: [{
       type: String,
       trim: true,
+      validate: {
+        validator: function(v: string) {
+          // Validate hex color format
+          return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(v);
+        },
+        message: 'Border color must be a valid hex color (e.g., #FF0000)'
+      }
     }],
     isTopProduct: {
       type: Boolean,

@@ -23,6 +23,7 @@ import {
 } from "@/redux/slices/cartSlice";
 import { selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
 import { formatPrice } from "@/lib/utils";
+import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
@@ -173,8 +174,9 @@ export default function CheckoutPage() {
           image: item.image,
           price: item.discountedPrice || item.price,
           quantity: item.quantity,
-          color: item.color,
-          font: item.font,
+          size: item.size,
+          backgroundColor: item.selectedBackgroundColor,
+          borderColor: item.selectedBorderColor,
         })),
         shippingAddress: {
           name: formData.name,
@@ -543,11 +545,26 @@ export default function CheckoutPage() {
                       <p className="font-medium text-secondary text-sm line-clamp-1">
                         {item.name}
                       </p>
-                      {item.color && (
-                        <p className="text-xs text-gray-500">Color: {item.color}</p>
+                      {item.size && (
+                        <p className="text-xs text-gray-500">Size: {item.size}</p>
                       )}
-                      {item.font && (
-                        <p className="text-xs text-gray-500">Font: {item.font}</p>
+                      {(item.selectedBackgroundColor || item.selectedBorderColor) && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          <span className="font-medium">🎨 Colors: </span>
+                          {item.selectedBackgroundColor && (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.selectedBackgroundColor }} />
+                              BG: {KEYCHAIN_COLORS.find(c => c.hex === item.selectedBackgroundColor)?.name}
+                            </span>
+                          )}
+                          {item.selectedBackgroundColor && item.selectedBorderColor && <span>, </span>}
+                          {item.selectedBorderColor && (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.selectedBorderColor }} />
+                              Border: {KEYCHAIN_COLORS.find(c => c.hex === item.selectedBorderColor)?.name}
+                            </span>
+                          )}
+                        </div>
                       )}
                       <p className="text-xs text-gray-500">
                         Qty: {item.quantity} × {formatPrice(item.discountedPrice || item.price)}

@@ -20,6 +20,7 @@ import {
 } from "@/redux/slices/authSlice";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { KEYCHAIN_COLORS } from "@/lib/constants";
 
 interface Order {
   _id: string;
@@ -29,8 +30,9 @@ interface Order {
     image: string;
     price: number;
     quantity: number;
-    color?: string;
-    font?: string;
+    size?: string;
+    backgroundColor?: string;
+    borderColor?: string;
   }[];
   total: number;
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -242,15 +244,28 @@ export default function OrdersPage() {
                                 <p className="font-medium text-secondary">
                                   {item.name}
                                 </p>
-                                {item.color && (
+                                {item.size && (
                                   <p className="text-sm text-gray-500">
-                                    Color: {item.color}
+                                    Size: {item.size}
                                   </p>
                                 )}
-                                {item.font && (
-                                  <p className="text-sm text-gray-500">
-                                    Font: {item.font}
-                                  </p>
+                                {(item.backgroundColor || item.borderColor) && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    <span className="font-medium">🎨 Your Colors: </span>
+                                    {item.backgroundColor && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.backgroundColor }} />
+                                        BG: {KEYCHAIN_COLORS.find(c => c.hex === item.backgroundColor)?.name}
+                                      </span>
+                                    )}
+                                    {item.backgroundColor && item.borderColor && <span>, </span>}
+                                    {item.borderColor && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <span className="w-3 h-3 rounded-full inline-block border" style={{ backgroundColor: item.borderColor }} />
+                                        Border: {KEYCHAIN_COLORS.find(c => c.hex === item.borderColor)?.name}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                                 <p className="text-sm text-gray-500">
                                   Qty: {item.quantity}

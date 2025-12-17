@@ -64,6 +64,16 @@ export const KEYCHAIN_COLORS = [
   { name: "Black", hex: "#000000" },
   { name: "White", hex: "#FFFFFF" },
   { name: "Gray", hex: "#808080" },
+  { name: "Brown", hex: "#8B4513" },
+  { name: "Navy", hex: "#000080" },
+  { name: "Teal", hex: "#008080" },
+  { name: "Maroon", hex: "#800000" },
+  { name: "Olive", hex: "#808000" },
+  { name: "Silver", hex: "#C0C0C0" },
+  { name: "Gold", hex: "#FFD700" },
+  { name: "Cyan", hex: "#00FFFF" },
+  { name: "Magenta", hex: "#FF00FF" },
+  { name: "Lime", hex: "#00FF00" },
 ];
 
 export const FONT_OPTIONS = [

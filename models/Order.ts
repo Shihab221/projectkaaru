@@ -9,6 +9,9 @@ export interface IOrderItem {
   quantity: number;
   color?: string;
   font?: string;
+  size?: string;
+  backgroundColor?: string;
+  borderColor?: string;
 }
 
 // Shipping address interface
@@ -70,6 +73,9 @@ const orderItemSchema = new Schema<IOrderItem>(
     },
     color: String,
     font: String,
+    size: String,
+    backgroundColor: String,
+    borderColor: String,
   },
   { _id: false }
 );
