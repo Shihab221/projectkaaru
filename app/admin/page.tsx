@@ -244,21 +244,21 @@ export default function AdminDashboard() {
                   {isLoadingStats ? (
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <stat.icon className="w-6 h-6 text-white" />
+                  <stat.icon className="w-6 h-6 text-white" />
                   )}
                 </div>
                 {!isLoadingStats && (
-                  <span className="text-sm font-medium text-green-500 flex items-center gap-1">
-                    <TrendingUp className="w-4 h-4" />
-                    {stat.change}
-                  </span>
+                <span className="text-sm font-medium text-green-500 flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" />
+                  {stat.change}
+                </span>
                 )}
               </div>
               <h3 className="text-gray-500 text-sm mb-1">{stat.title}</h3>
               {isLoadingStats ? (
                 <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
               ) : (
-                <p className="text-2xl font-bold text-secondary">{stat.value}</p>
+              <p className="text-2xl font-bold text-secondary">{stat.value}</p>
               )}
             </motion.div>
           ))}
@@ -359,11 +359,11 @@ export default function AdminDashboard() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No orders yet</p>
-                <p className="text-sm mt-1">Orders will appear here when customers make purchases</p>
-              </div>
+            <div className="text-center py-8 text-gray-500">
+              <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No orders yet</p>
+              <p className="text-sm mt-1">Orders will appear here when customers make purchases</p>
+            </div>
             )}
           </div>
         </div>
