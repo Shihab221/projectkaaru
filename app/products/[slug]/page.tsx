@@ -26,7 +26,7 @@ import {
   selectProductsError,
   clearCurrentProduct,
 } from "@/redux/slices/productSlice";
-import { addToCart, openCart } from "@/redux/slices/cartSlice";
+import { addToCart, openCart, clearCart } from "@/redux/slices/cartSlice";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
@@ -178,8 +178,29 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
-    router.push("/checkout");
+    // Clear cart first, then add this product
+    dispatch(clearCart());
+
+    // Add product to cart with all selected options
+    dispatch(
+      addToCart({
+        _id: product._id,
+        name: product.name,
+        slug: product.slug,
+        price: currentPrice.price,
+        discountedPrice: currentPrice.discountedPrice,
+        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
+        quantity,
+        stock: getCurrentStock(),
+        size: selectedSize || undefined,
+        selectedBackgroundColor: selectedBackgroundColor || undefined,
+        selectedBorderColor: selectedBorderColor || undefined,
+      })
+    );
+
+    // Open cart sidebar
+    dispatch(openCart());
+    toast.success("Added to cart!");
   };
 
   if (isLoading || isRetrying) {

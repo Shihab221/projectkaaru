@@ -8,11 +8,15 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format price in BDT
 export function formatPrice(price: number): string {
+  // Ensure price is treated as an integer if it's a whole number
+  const cleanPrice = Math.round(price * 100) / 100; // Round to 2 decimal places to avoid floating point issues
+
   return new Intl.NumberFormat("en-BD", {
     style: "currency",
     currency: "BDT",
-    minimumFractionDigits: 0,
-  }).format(price);
+    minimumFractionDigits: cleanPrice % 1 === 0 ? 0 : 2, // No decimals for whole numbers
+    maximumFractionDigits: 2,
+  }).format(cleanPrice);
 }
 
 // Calculate discount percentage

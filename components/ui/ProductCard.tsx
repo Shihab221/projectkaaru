@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Zap, Star } from "lucide-react";
 import { useAppDispatch } from "@/redux/hooks";
-import { addToCart, openCart } from "@/redux/slices/cartSlice";
+import { addToCart, openCart, clearCart } from "@/redux/slices/cartSlice";
 import { formatPrice, calculateDiscount, truncateText } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -68,6 +68,8 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
+    // Clear cart first, then add this product
+    dispatch(clearCart());
     dispatch(
       addToCart({
         _id: product._id,
@@ -81,7 +83,9 @@ export function ProductCard({ product }: ProductCardProps) {
       })
     );
 
-    window.location.href = "/checkout";
+    // Open cart sidebar
+    dispatch(openCart());
+    toast.success("Added to cart!");
   };
 
   return (
@@ -135,13 +139,15 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Description */}
           <p className="product-card-description">
             {truncateText(
-              product.shortDescription || product.description || "",
+              (product.shortDescription && typeof product.shortDescription === 'string' && product.shortDescription.trim() ? product.shortDescription.trim() : "") ||
+              (product.description && typeof product.description === 'string' && product.description.trim() ? product.description.trim() : "") ||
+              "",
               60
             )}
           </p>
 
           {/* Rating */}
-          {product.numReviews && product.numReviews > 0 && (
+          {/* {product.numReviews && product.numReviews > 0 && (
             <div className="flex items-center gap-1 mt-2">
               <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
               <span className="text-sm font-medium">
@@ -151,7 +157,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ({product.numReviews})
               </span>
             </div>
-          )}
+          )} */}
 
           {/* Price */}
           <div className="product-card-price">
