@@ -1,7 +1,7 @@
 // Migration script: move font names accidentally stored in `colors` into `fonts` array
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/projectkaaru';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/projectkaru';
 
 // List of known font names (keep in sync with lib/constants.ts)
 const FONT_OPTIONS = [

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/projectkaaru";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/projectkaru";
 
 // Category Schema
 const categorySchema = new mongoose.Schema({
@@ -79,7 +79,7 @@ const adminPasswordHash = "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.A.gM1l9
 
 const adminUser = {
   name: "Admin",
-  email: "admin@projectkaaru.com",
+  email: "admin@projectkaru.com",
   password: adminPasswordHash,
   role: "admin",
 };
@@ -104,7 +104,7 @@ async function seed() {
     // Seed admin user
     console.log("👤 Creating admin user...");
     await User.create(adminUser);
-    console.log("✅ Admin user created (admin@projectkaaru.com / admin123)");
+    console.log("✅ Admin user created (admin@projectkaru.com / admin123)");
 
     // Seed sample products
     console.log("📦 Seeding sample products...");
@@ -191,7 +191,7 @@ async function seed() {
 
     console.log("\n🎉 Database seeded successfully!");
     console.log("\n📋 Admin Login:");
-    console.log("   Email: admin@projectkaaru.com");
+    console.log("   Email: admin@projectkaru.com");
     console.log("   Password: admin123");
 
     process.exit(0);

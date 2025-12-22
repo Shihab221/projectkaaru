@@ -1,5 +1,5 @@
 // App constants
-export const APP_NAME = "ProjectKaaru";
+export const APP_NAME = "ProjectKaru";
 export const APP_DESCRIPTION = "Custom 3D Printed Wonders - Home Decor, Keychains, Organizers & More";
 
 // Default categories (seeded in DB)
@@ -95,10 +95,10 @@ export const ORDERS_PER_PAGE = 10;
 
 // Social links
 export const SOCIAL_LINKS = {
-  facebook: "https://facebook.com/projectkaaru",
+  facebook: "https://facebook.com/projectkaru",
   whatsapp: "https://wa.me/8801712345678",
-  linkedin: "https://linkedin.com/company/projectkaaru",
-  instagram: "https://instagram.com/projectkaaru",
+  linkedin: "https://linkedin.com/company/projectkaru",
+  instagram: "https://instagram.com/projectkaru",
 };
 
 // Navigation links

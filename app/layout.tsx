@@ -8,7 +8,7 @@ import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "ProjectKaaru | Custom 3D Printed Products",
+  title: "ProjectKaru | Custom 3D Printed Products",
   description:
     "Custom 3D Printed Wonders - Home Decor, Keychains, Organizers & More. Quality 3D printing services in Bangladesh.",
   keywords: [
@@ -18,10 +18,10 @@ export const metadata: Metadata = {
     "keychains",
     "organizers",
     "Bangladesh",
-    "ProjectKaaru",
+    "ProjectKaru",
   ],
   openGraph: {
-    title: "ProjectKaaru | Custom 3D Printed Products",
+    title: "ProjectKaru | Custom 3D Printed Products",
     description: "Custom 3D Printed Wonders - Home Decor, Keychains, Organizers & More",
     type: "website",
   },

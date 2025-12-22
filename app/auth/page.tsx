@@ -111,7 +111,7 @@ function AuthPageContent() {
           <p className="text-gray-500 mt-2">
             {mode === "login"
               ? "Sign in to your account"
-              : "Join ProjectKaaru today"}
+              : "Join ProjectKaru today"}
           </p>
         </div>
 

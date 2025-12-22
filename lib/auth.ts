@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "projectkaaru-secret-key-2024"
+  process.env.JWT_SECRET || "projectkaru-secret-key-2024"
 );
 
 export interface JWTPayload {

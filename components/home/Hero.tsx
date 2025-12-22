@@ -83,7 +83,7 @@ export function Hero() {
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
                 <span className="inline-block px-4 py-1.5 bg-primary rounded-full text-white text-sm font-medium mb-4">
-                  ProjectKaaru
+                  ProjectKaru
                 </span>
               </motion.div>
 

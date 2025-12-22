@@ -1,4 +1,4 @@
-# ProjectKaaru 🎨
+# ProjectKaru 🎨
 
 > Custom 3D Printed Products E-Commerce Platform
 
@@ -85,7 +85,7 @@ npm install
 Create a `.env.local` file:
 ```env
 # Database
-MONGODB_URI=mongodb://localhost:27017/projectkaaru
+MONGODB_URI=mongodb://localhost:27017/projectkaru
 
 # JWT Secret (generate a random string)
 JWT_SECRET=your-super-secret-jwt-key
@@ -205,5 +205,5 @@ Contributions welcome! Please read our contributing guidelines.
 
 ---
 
-Built with ❤️ by ProjectKaaru Team
+Built with ❤️ by ProjectKaru Team
 

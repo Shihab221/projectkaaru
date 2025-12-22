@@ -37,7 +37,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-2 mb-4">
             <Image 
               src="/Logo Web.png"
-              alt="ProjectKaaru Logo"
+              alt="ProjectKaru Logo"
               width={80}
               height={80}
             />
@@ -50,11 +50,11 @@ export function Footer() {
             {/* Contact Info */}
             <div className="space-y-3 text-sm">
               <a
-                href="mailto:hello@projectkaaru.com"
+                href="mailto:hello@projectkaru.com"
                 className="flex items-center gap-3 text-gray-400 hover:text-primary transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                hello@projectkaaru.com
+                hello@projectkaru.com
               </a>
               <a
                 href="tel:+8801712345678"
@@ -167,7 +167,7 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="container-custom py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">
-            © {new Date().getFullYear()} ProjectKaaru. All rights reserved.
+            © {new Date().getFullYear()} ProjectKaru. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link

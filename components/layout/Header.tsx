@@ -77,7 +77,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2">
             <Image 
               src="/Website Logo.png"
-              alt="ProjectKaaru Logo"
+              alt="ProjectKaru Logo"
               width={200}
               height={100}
             />

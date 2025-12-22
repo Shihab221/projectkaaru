@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/projectkaaru";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/projectkaru";
 
 // User schema (simplified for script)
 const userSchema = new mongoose.Schema({
@@ -29,11 +29,11 @@ async function createSuperAdmin() {
     const User = mongoose.models.User || mongoose.model("User", userSchema);
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: "admin@projectkaaru.com" });
+    const existingAdmin = await User.findOne({ email: "admin@projectkaru.com" });
     
     if (existingAdmin) {
       console.log("⚠️  Admin user already exists!");
-      console.log("   Email: admin@projectkaaru.com");
+      console.log("   Email: admin@projectkaru.com");
       
       // Update to admin role if not already
       if (existingAdmin.role !== "admin") {
@@ -49,7 +49,7 @@ async function createSuperAdmin() {
       // Create admin user
       const admin = new User({
         name: "Super Admin",
-        email: "admin@projectkaaru.com",
+        email: "admin@projectkaru.com",
         password: hashedPassword,
         role: "admin",
         isBlocked: false,
@@ -60,7 +60,7 @@ async function createSuperAdmin() {
     }
 
     console.log("\n📋 Admin Credentials:");
-    console.log("   Email: admin@projectkaaru.com");
+    console.log("   Email: admin@projectkaru.com");
     console.log("   Password: 12345678");
     console.log("\n⚠️  IMPORTANT: Change this password after first login!");
 

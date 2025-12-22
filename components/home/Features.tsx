@@ -48,7 +48,7 @@ export function Features() {
             viewport={{ once: true }}
             className="text-3xl md:text-4xl font-bold mb-4"
           >
-            Why Choose ProjectKaaru?
+            Why Choose ProjectKaru?
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
