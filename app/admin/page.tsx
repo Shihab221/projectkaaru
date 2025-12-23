@@ -16,6 +16,8 @@ import {
   Clock,
   CheckCircle,
   Truck,
+  Settings,
+  Grid3X3,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
@@ -29,6 +31,12 @@ const quickActions = [
     icon: Plus,
   },
   {
+    title: "Manage Products",
+    description: "View and manage all products",
+    href: "/admin/products",
+    icon: Settings,
+  },
+  {
     title: "View Orders",
     description: "Manage customer orders",
     href: "/admin/orders",
@@ -38,7 +46,7 @@ const quickActions = [
     title: "Manage Categories",
     description: "Edit product categories",
     href: "/admin/categories",
-    icon: Package,
+    icon: Grid3X3,
   },
   {
     title: "Analytics",

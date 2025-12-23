@@ -58,6 +58,7 @@ interface Order {
   itemsTotal: number;
   shippingCost: number;
   discount: number;
+  paymentProcessingFee: number;
   total: number;
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   createdAt: string;
@@ -482,6 +483,12 @@ export default function AdminOrdersPage() {
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Discount</span>
                         <span>-৳{selectedOrder.discount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedOrder.paymentProcessingFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Payment Processing Fee</span>
+                        <span>৳{selectedOrder.paymentProcessingFee.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-secondary pt-2 border-t border-gray-200">

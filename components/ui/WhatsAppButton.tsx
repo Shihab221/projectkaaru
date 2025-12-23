@@ -21,8 +21,8 @@ export function WhatsAppButton() {
     >
       <MessageCircle className="w-6 h-6" />
       
-      {/* Pulse animation */}
-      <span className="absolute w-full h-full rounded-full bg-[#25D366] animate-ping opacity-30" />
+      {/* Pulse animation - only visible on desktop */}
+      <span className="hidden md:block absolute w-full h-full rounded-full bg-[#25D366] animate-ping opacity-30" />
     </motion.a>
   );
 }

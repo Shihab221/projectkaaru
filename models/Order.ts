@@ -37,6 +37,7 @@ export interface IOrder extends Document {
   itemsTotal: number;
   shippingCost: number;
   discount: number;
+  paymentProcessingFee: number;
   total: number;
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   notes?: string;
@@ -140,6 +141,10 @@ const orderSchema = new Schema<IOrder>(
       default: 0,
     },
     discount: {
+      type: Number,
+      default: 0,
+    },
+    paymentProcessingFee: {
       type: Number,
       default: 0,
     },

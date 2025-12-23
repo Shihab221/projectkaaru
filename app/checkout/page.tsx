@@ -117,9 +117,15 @@ export default function CheckoutPage() {
     (total, item) => total + (item.discountedPrice || item.price) * item.quantity,
     0
   );
-  const shippingCost = itemsTotal > 1000 ? 0 : 100; // Free shipping over ৳1000
+  const shippingCost = itemsTotal > 1000 ? 0 : 60; // Free shipping over ৳1000, otherwise ৳60
   const discount = 0; // Could be implemented later with coupons
-  const total = itemsTotal + shippingCost - discount;
+
+  // Payment processing fee: 1.8% for bkash and nagad
+  const paymentProcessingFee = (formData.paymentMethod === "bkash" || formData.paymentMethod === "nagad")
+    ? (itemsTotal + shippingCost - discount) * 0.018
+    : 0;
+
+  const total = itemsTotal + shippingCost - discount + paymentProcessingFee;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -192,6 +198,7 @@ export default function CheckoutPage() {
         itemsTotal,
         shippingCost,
         discount,
+        paymentProcessingFee,
         total,
         notes: formData.notes,
         transactionId: formData.transactionId,
@@ -591,6 +598,12 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
                     <span>-{formatPrice(discount)}</span>
+                  </div>
+                )}
+                {paymentProcessingFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Payment Processing Fee (1.8%)</span>
+                    <span>{formatPrice(paymentProcessingFee)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-secondary pt-2 border-t border-gray-100">
