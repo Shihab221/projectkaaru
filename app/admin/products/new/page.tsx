@@ -533,7 +533,7 @@ export default function NewProductPage() {
                 </p>
                 <div className="space-y-4">
                   <ColorSelector
-                    label="Keychain Colors (customers will choose ONE)"
+                    label="Font Colors (customers will choose ONE)"
                     selectedColors={formData.backgroundColors}
                     onColorsChange={(colors) => setFormData({ ...formData, backgroundColors: colors })}
                     colors={KEYCHAIN_COLORS}
