@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Category from "@/models/Category";
+import prisma from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
-    const categories = await Category.find({ isActive: true })
-      .sort({ name: 1 })
-      .lean();
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        image: true,
+        subcategories: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
 
     return NextResponse.json({ categories });
   } catch (error: any) {

@@ -2,15 +2,16 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Size interface
 export interface ProductSize {
+  id?: string;
   name: string;
   price: number;
   discountedPrice?: number;
   stock?: number;
 }
 
-// Product interface
+// Product interface (matches Prisma schema)
 export interface Product {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   description: string;
@@ -18,12 +19,12 @@ export interface Product {
   price: number;
   discountedPrice?: number;
   category: {
-    _id: string;
+    id: string;
     name: string;
     slug: string;
   };
   subcategory?: string;
-  images: string[];
+  images?: string[]; // For backward compatibility - will be generated from ProductImage relation
   stock?: number;
   sizes?: ProductSize[];
   backgroundColors?: string[];
@@ -35,6 +36,9 @@ export interface Product {
   isActive: boolean;
   averageRating: number;
   numReviews: number;
+  sold?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Products state interface

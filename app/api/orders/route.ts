@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Order from "@/models/Order";
-import Product from "@/models/Product";
+import prisma from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -12,18 +10,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
     const {
       items,
       shippingAddress,
       paymentMethod,
-      paymentStatus,
+      paymentStatus = "pending",
       itemsTotal,
       shippingCost,
-      discount,
-      paymentProcessingFee,
+      discount = 0,
+      paymentProcessingFee = 0,
       total,
       notes,
       transactionId,
@@ -44,108 +40,168 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate and update product stock
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return NextResponse.json(
-          { error: `Product ${item.product} not found` },
-          { status: 400 }
-        );
-      }
+    // Use Prisma transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Validate and update product stock
+      for (const item of items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.product },
+          include: { sizes: true }
+        });
 
-      // Check stock based on size or default stock
-      let availableStock = product.stock || 1000;
-      if (item.size && product.sizes) {
-        const sizeData = product.sizes.find(s => s.name === item.size);
-        if (sizeData) {
-          availableStock = sizeData.stock || 1000;
+        if (!product) {
+          throw new Error(`Product ${item.product} not found`);
+        }
+
+        // Check stock based on size or default stock
+        let availableStock = product.stock;
+        let sizeToUpdate = null;
+
+        if (item.size && product.sizes) {
+          const sizeData = product.sizes.find(s => s.name === item.size);
+          if (sizeData) {
+            availableStock = sizeData.stock;
+            sizeToUpdate = sizeData;
+          }
+        }
+
+        if (availableStock < item.quantity) {
+          throw new Error(`Insufficient stock for ${product.name}${item.size ? ` (${item.size})` : ''}`);
         }
       }
 
-      if (availableStock < item.quantity) {
-        return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}${item.size ? ` (${item.size})` : ''}` },
-          { status: 400 }
-        );
-      }
-
-      // Update stock based on size
-      if (item.size && product.sizes) {
-        const sizeIndex = product.sizes.findIndex(s => s.name === item.size);
-        if (sizeIndex !== -1) {
-          product.sizes[sizeIndex].stock = (product.sizes[sizeIndex].stock || 1000) - item.quantity;
+      // Update stock and sold count for each product
+      for (const item of items) {
+        // Update product stock
+        if (item.size) {
+          // Update size-specific stock
+          await tx.productSize.updateMany({
+            where: {
+              productId: item.product,
+              name: item.size
+            },
+            data: {
+              stock: {
+                decrement: item.quantity
+              }
+            }
+          });
+        } else {
+          // Update main product stock
+          await tx.product.update({
+            where: { id: item.product },
+            data: {
+              stock: {
+                decrement: item.quantity
+              }
+            }
+          });
         }
-      } else {
-        product.stock = (product.stock || 1000) - item.quantity;
+
+        // Update sold count
+        await tx.product.update({
+          where: { id: item.product },
+          data: {
+            sold: {
+              increment: item.quantity
+            }
+          }
+        });
       }
 
-      // Update sold count
-      product.sold += item.quantity;
-      await product.save();
-    }
+      // Generate unique order number
+      const generateOrderNumber = () => {
+        const date = new Date();
+        const timestamp = date.getTime();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+        return `PK${timestamp}${randomSuffix}`;
+      };
 
-    // Generate unique order number
-    const generateOrderNumber = () => {
-      const date = new Date();
-      const timestamp = date.getTime();
-      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-      return `PK${timestamp}${randomSuffix}`;
-    };
+      let orderNumber = generateOrderNumber();
+      let orderExists = true;
+      let attempts = 0;
 
-    let orderNumber = generateOrderNumber();
-    let order;
+      // Ensure unique order number
+      while (orderExists && attempts < 5) {
+        const existingOrder = await tx.order.findUnique({
+          where: { orderNumber }
+        });
+        if (!existingOrder) {
+          orderExists = false;
+        } else {
+          orderNumber = generateOrderNumber();
+          attempts++;
+        }
+      }
 
-    // Try to create order, retry if order number is duplicate
-    for (let attempts = 0; attempts < 5; attempts++) {
-      try {
-        order = await Order.create({
+      if (attempts >= 5) {
+        throw new Error("Failed to generate unique order number");
+      }
+
+      // Create order with shipping address
+      const order = await tx.order.create({
+        data: {
           orderNumber,
-          user: payload.userId,
-          items,
-          shippingAddress,
-          paymentMethod,
-          paymentStatus,
+          userId: payload.userId,
+          paymentMethod: paymentMethod || "cod",
+          paymentStatus: paymentStatus as any,
           itemsTotal,
           shippingCost,
           discount,
           paymentProcessingFee,
           total,
+          status: "pending",
           notes,
-          transactionId,
-        });
-        break; // Success
-      } catch (error: any) {
-        // Check if it's a duplicate key error
-        if (error.code === 11000 && error.message.includes('orderNumber')) {
-          // Generate new order number and retry
-          orderNumber = generateOrderNumber();
-          continue;
+          shippingAddress: {
+            create: {
+              name: shippingAddress.name,
+              phone: shippingAddress.phone,
+              street: shippingAddress.street,
+              city: shippingAddress.city,
+              state: shippingAddress.state || "",
+              postalCode: shippingAddress.postalCode,
+              country: shippingAddress.country || "Bangladesh",
+            }
+          },
+          items: {
+            create: items.map((item: any) => ({
+              productId: item.product,
+              name: item.name,
+              image: item.image,
+              price: item.price,
+              quantity: item.quantity,
+              color: item.color || null,
+              font: item.font || null,
+              size: item.size || null,
+              backgroundColor: item.backgroundColor || null,
+              borderColor: item.borderColor || null,
+            }))
+          }
+        },
+        include: {
+          shippingAddress: true,
+          items: {
+            include: {
+              product: {
+                select: { id: true, name: true, slug: true }
+              }
+            }
+          }
         }
-        // Re-throw other errors
-        throw error;
-      }
-    }
+      });
 
-    if (!order) {
-      throw new Error("Failed to create order after multiple attempts");
-    }
-
-    // Populate order with product and user details
-    await order.populate([
-      { path: "user", select: "name email" },
-      { path: "items.product", select: "name slug images" },
-    ]);
+      return order;
+    });
 
     return NextResponse.json(
       {
         message: "Order created successfully",
         order: {
-          _id: order._id,
-          orderNumber: order.orderNumber,
-          status: order.status,
-          total: order.total,
-          createdAt: order.createdAt,
+          id: result.id,
+          orderNumber: result.orderNumber,
+          status: result.status,
+          total: result.total,
+          createdAt: result.createdAt,
         },
       },
       { status: 201 }

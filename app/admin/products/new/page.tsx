@@ -72,7 +72,7 @@ const ColorSelector = ({ selectedColors, onColorsChange, label, colors }: {
 import Image from "next/image";
 
 interface Category {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   subcategories: string[];
@@ -272,7 +272,7 @@ export default function NewProductPage() {
     }));
   };
 
-  const selectedCategory = categories.find((c) => c._id === formData.category);
+  const selectedCategory = categories.find((c) => c.id === formData.category);
   const isKeychain = selectedCategory?.slug === "key-chains";
   const isNameplate = selectedCategory?.slug === "key-chains";
 
@@ -572,7 +572,7 @@ export default function NewProductPage() {
                   >
                     <option value="">Select category</option>
                     {categories.map((category) => (
-                      <option key={category._id} value={category._id}>
+                      <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}

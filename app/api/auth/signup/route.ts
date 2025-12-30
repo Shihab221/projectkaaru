@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import User from "@/models/User";
+import prisma from "@/lib/db";
 import { generateToken, setAuthCookie } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const { name, email, password } = await request.json();
 
     // Validate input
@@ -25,7 +23,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
     if (existingUser) {
       return NextResponse.json(
         { error: "Email already registered" },
@@ -33,18 +34,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create new user
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password,
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      }
     });
 
     // Generate token
     const token = await generateToken({
-      userId: user._id.toString(),
+      userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as "user" | "admin",
     });
 
     // Create response
@@ -52,7 +65,7 @@ export async function POST(request: NextRequest) {
       {
         message: "Account created successfully",
         user: {
-          _id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,

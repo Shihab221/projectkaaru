@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Category from "@/models/Category";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -11,11 +10,9 @@ export async function GET(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
-    const categories = await Category.find({})
-      .sort({ createdAt: -1 })
-      .lean();
+    const categories = await prisma.category.findMany({
+      orderBy: { createdAt: "desc" },
+    });
 
     return NextResponse.json({
       success: true,
@@ -38,8 +35,6 @@ export async function POST(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
     const body = await request.json();
     const { name, description, image, subcategories = [] } = body;
 
@@ -51,8 +46,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if category with this name already exists
-    const existingCategory = await Category.findOne({
-      name: { $regex: new RegExp(`^${name.trim()}$`, "i") }
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: {
+          equals: name.trim(),
+          mode: "insensitive"
+        }
+      }
     });
 
     if (existingCategory) {
@@ -69,17 +69,17 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
 
-    const category = new Category({
-      name: name.trim(),
-      slug,
-      description: description?.trim() || undefined,
-      image: image?.trim() || undefined,
-      subcategories: Array.isArray(subcategories)
-        ? subcategories.filter(sub => sub && typeof sub === "string").map(sub => sub.trim())
-        : [],
+    const category = await prisma.category.create({
+      data: {
+        name: name.trim(),
+        slug,
+        description: description?.trim() || null,
+        image: image?.trim() || null,
+        subcategories: Array.isArray(subcategories)
+          ? subcategories.filter(sub => sub && typeof sub === "string").map(sub => sub.trim())
+          : [],
+      },
     });
-
-    await category.save();
 
     return NextResponse.json({
       success: true,
@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Error creating category:", error);
 
-    // Handle duplicate key error
-    if (error.code === 11000) {
+    // Handle unique constraint violations
+    if (error.code === "P2002") {
       return NextResponse.json(
         { message: "Category with this name or slug already exists" },
         { status: 400 }

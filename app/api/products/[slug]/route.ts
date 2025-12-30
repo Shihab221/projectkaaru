@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Product from "@/models/Product";
+import prisma from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
@@ -15,15 +14,26 @@ export async function GET(
       );
     }
 
-    await connectDB();
-
-    const product = await Product.findOne({
-      slug: params.slug,
-      isActive: true,
-    })
-      .populate("category", "name slug")
-      .populate("reviews.user", "name")
-      .lean();
+    const product = await prisma.product.findFirst({
+      where: {
+        slug: params.slug,
+        isActive: true,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true }
+        },
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        sizes: true,
+        images: true,
+      }
+    });
 
     if (!product) {
       console.log(`Product not found for slug: ${params.slug}`);
@@ -36,14 +46,19 @@ export async function GET(
     // Fetch related products (with error handling)
     let relatedProducts = [];
     try {
-      relatedProducts = await Product.find({
-        category: product.category._id,
-        _id: { $ne: product._id },
-        isActive: true,
-      })
-        .limit(4)
-        .populate("category", "name slug")
-        .lean();
+      relatedProducts = await prisma.product.findMany({
+        where: {
+          categoryId: product.categoryId,
+          id: { not: product.id },
+          isActive: true,
+        },
+        include: {
+          category: {
+            select: { id: true, name: true, slug: true }
+          }
+        },
+        take: 4,
+      });
     } catch (relatedError) {
       console.warn("Error fetching related products:", relatedError);
       // Continue without related products rather than failing the whole request
@@ -60,14 +75,6 @@ export async function GET(
       stack: error.stack,
       name: error.name,
     });
-
-    // Return appropriate error status
-    if (error.name === 'ValidationError') {
-      return NextResponse.json(
-        { error: "Invalid data format" },
-        { status: 400 }
-      );
-    }
 
     return NextResponse.json(
       { error: "Internal server error" },

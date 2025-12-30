@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 // Cart item interface
 export interface CartItem {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   price: number;
@@ -58,7 +58,7 @@ const cartSlice = createSlice({
     addToCart: (state, action: PayloadAction<CartItem>) => {
       const existingIndex = state.items.findIndex(
         (item) =>
-          item._id === action.payload._id &&
+          item.id === action.payload.id &&
           item.size === action.payload.size &&
           item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
           item.selectedBorderColor === action.payload.selectedBorderColor
@@ -77,10 +77,10 @@ const cartSlice = createSlice({
     },
 
     // Remove item from cart
-    removeFromCart: (state, action: PayloadAction<{ _id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string }>) => {
+    removeFromCart: (state, action: PayloadAction<{ id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string }>) => {
       state.items = state.items.filter(
         (item) =>
-          !(item._id === action.payload._id &&
+          !(item.id === action.payload.id &&
             item.size === action.payload.size &&
             item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
             item.selectedBorderColor === action.payload.selectedBorderColor)
@@ -91,11 +91,11 @@ const cartSlice = createSlice({
     // Update item quantity
     updateQuantity: (
       state,
-      action: PayloadAction<{ _id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string; quantity: number }>
+      action: PayloadAction<{ id: string; size?: string; selectedBackgroundColor?: string; selectedBorderColor?: string; quantity: number }>
     ) => {
       const item = state.items.find(
         (item) =>
-          item._id === action.payload._id &&
+          item.id === action.payload.id &&
           item.size === action.payload.size &&
           item.selectedBackgroundColor === action.payload.selectedBackgroundColor &&
           item.selectedBorderColor === action.payload.selectedBorderColor

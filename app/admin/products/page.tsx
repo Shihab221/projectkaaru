@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Package,
@@ -25,7 +26,7 @@ import toast from "react-hot-toast";
 import { formatPrice } from "@/lib/utils";
 
 interface Product {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   description: string;
@@ -33,7 +34,7 @@ interface Product {
   price: number;
   discountedPrice?: number;
   category: {
-    _id: string;
+    id: string;
     name: string;
     slug: string;
   };
@@ -42,6 +43,7 @@ interface Product {
     data: Buffer;
     contentType: string;
     filename: string;
+    id: string;
   }>;
   stock: number;
   sizes?: Array<{
@@ -49,6 +51,7 @@ interface Product {
     price: number;
     discountedPrice?: number;
     stock: number;
+    id: string;
   }>;
   backgroundColors?: string[];
   borderColors?: string[];
@@ -105,7 +108,7 @@ export default function AdminProducts() {
 
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/admin/products/${deletingProduct._id}`, {
+      const res = await fetch(`/api/admin/products/${deletingProduct.id}`, {
         method: "DELETE",
       });
 
@@ -113,7 +116,7 @@ export default function AdminProducts() {
 
       if (res.ok) {
         toast.success("Product deleted successfully");
-        setProducts(products.filter(p => p._id !== deletingProduct._id));
+        setProducts(products.filter(p => p.id !== deletingProduct.id));
         setShowDeleteModal(false);
         setDeletingProduct(null);
       } else {
@@ -275,7 +278,7 @@ export default function AdminProducts() {
             <div className="divide-y divide-gray-100">
               {products.map((product, index) => (
                 <motion.div
-                  key={product._id}
+                  key={product.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
@@ -283,12 +286,25 @@ export default function AdminProducts() {
                 >
                   <div className="flex items-start gap-4">
                     {/* Product Image */}
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {product.images && product.images.length > 0 ? (
-                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                        <Image
+                          src={`/api/images/${product.id}/0`}
+                          alt={product.name}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to icon if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
                       ) : (
                         <Package className="w-8 h-8 text-gray-400" />
                       )}
+                      {/* Fallback icon (hidden by default) */}
+                      <Package className="w-8 h-8 text-gray-400 hidden" />
                     </div>
 
                     {/* Product Info */}
@@ -392,7 +408,7 @@ export default function AdminProducts() {
                             </Link>
 
                             <Link
-                              href={`/admin/products/new?id=${product._id}`}
+                              href={`/admin/products/new?id=${product.id}`}
                               className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Edit Product"
                             >

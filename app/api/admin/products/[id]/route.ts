@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Product from "@/models/Product";
-import mongoose from "mongoose";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(
@@ -15,20 +13,28 @@ export async function GET(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid product ID" },
-        { status: 400 }
-      );
-    }
-
-    const product = await Product.findById(id)
-      .populate("category", "name slug")
-      .lean();
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true }
+        },
+        sizes: true,
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        images: true,
+        _count: {
+          select: { reviews: true }
+        }
+      }
+    });
 
     if (!product) {
       return NextResponse.json(
@@ -61,19 +67,14 @@ export async function DELETE(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid product ID" },
-        { status: 400 }
-      );
-    }
-
     // Check if product exists
-    const product = await Product.findById(id);
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { id: true, name: true }
+    });
+
     if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
@@ -81,8 +82,10 @@ export async function DELETE(
       );
     }
 
-    // Delete the product
-    await Product.findByIdAndDelete(id);
+    // Delete the product (cascade will handle related records)
+    await prisma.product.delete({
+      where: { id }
+    });
 
     return NextResponse.json({
       success: true,

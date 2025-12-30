@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Product from "@/models/Product";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 import { generateSlug } from "@/lib/utils";
 
@@ -13,8 +12,6 @@ export async function POST(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
     const body = await request.json();
     const {
       name,
@@ -23,7 +20,6 @@ export async function POST(request: NextRequest) {
       price,
       discountedPrice,
       category,
-      subcategory,
       images: uploadedImages,
       stock,
       sizes,
@@ -52,76 +48,67 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate slug
+    // Generate slug and ensure uniqueness
     let slug = generateSlug(name);
-    
-    // Check if slug exists and make it unique
-    const existingProduct = await Product.findOne({ slug });
+    let existingProduct = await prisma.product.findUnique({ where: { slug } });
     if (existingProduct) {
       slug = `${slug}-${Date.now()}`;
     }
 
-    // Convert base64 image data back to Buffer for MongoDB storage
-    const processedImages = (uploadedImages || []).map((img: any) => {
-      if (img && img.data && typeof img.data === 'string') {
-        // Convert base64 string back to Buffer
-        return {
-          data: Buffer.from(img.data, 'base64'),
-          contentType: img.contentType,
-          filename: img.filename,
-        };
-      }
-      return img;
+    // Create the product without transaction to avoid timeout issues
+    const product = await prisma.product.create({
+      data: {
+        name,
+        slug,
+        description,
+        shortDescription: shortDescription || null,
+        price: parseFloat(price),
+        discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
+        categoryId: category,
+        stock: stock ? parseInt(stock) : 1000,
+        backgroundColors: backgroundColors || [],
+        borderColors: borderColors || [],
+        isTopProduct: isTopProduct || false,
+      },
     });
 
-    // Prepare product data
-    const productData: any = {
-      name,
-      slug,
-      description,
-      shortDescription,
-      price,
-      discountedPrice: discountedPrice || undefined,
-      category,
-      subcategory,
-      images: processedImages,
-      isTopProduct: isTopProduct || false,
-    };
-
-    // Handle sizes and stock
+    // Create sizes if provided
     if (sizes && sizes.length > 0) {
-      // If sizes are provided, use them and ignore single stock
-      productData.sizes = sizes.map((size: any) => ({
-        name: size.name,
-        price: size.price,
-        discountedPrice: size.discountedPrice || undefined,
-        stock: size.stock !== undefined ? size.stock : 1000,
-      }));
-      // Set single stock to sum of all sizes for backward compatibility
-      productData.stock = productData.sizes.reduce((total: number, size: any) => total + (size.stock || 1000), 0);
-    } else {
-      // If no sizes, use single stock (default to 1000 if not provided)
-      productData.stock = stock !== undefined ? stock : 1000;
+      await prisma.productSize.createMany({
+        data: sizes.map((size: any) => ({
+          productId: product.id,
+          name: size.name,
+          price: parseFloat(size.price),
+          discountedPrice: size.discountedPrice ? parseFloat(size.discountedPrice) : null,
+          stock: size.stock ? parseInt(size.stock) : 1000,
+        }))
+      });
     }
 
-    // Add colors if provided
-    if (backgroundColors && backgroundColors.length > 0) {
-      productData.backgroundColors = backgroundColors;
-    }
-    if (borderColors && borderColors.length > 0) {
-      productData.borderColors = borderColors;
+    // Create images if provided
+    if (uploadedImages && uploadedImages.length > 0) {
+      await prisma.productImage.createMany({
+        data: uploadedImages.map((img: any) => ({
+          productId: product.id,
+          filename: img.filename,
+          contentType: img.contentType,
+          data: Buffer.from(img.data, 'base64'),
+        }))
+      });
     }
 
-    // Create product
-    console.log('Creating product with data:', {
-      ...productData,
-      images: productData.images ? `${productData.images.length} images` : 'no images'
+    // Fetch the complete product with relations
+    const completeProduct = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: {
+        category: true,
+        sizes: true,
+        images: true,
+      }
     });
-    const product = await Product.create(productData);
-    console.log('Product created with ID:', product._id);
 
     return NextResponse.json(
-      { message: "Product created successfully", product },
+      { message: "Product created successfully", product: completeProduct },
       { status: 201 }
     );
   } catch (error: any) {
@@ -141,12 +128,19 @@ export async function GET(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
-    const products = await Product.find()
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .lean();
+    const products = await prisma.product.findMany({
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true }
+        },
+        sizes: true,
+        images: true,
+        _count: {
+          select: { reviews: true }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
     return NextResponse.json({ products });
   } catch (error: any) {

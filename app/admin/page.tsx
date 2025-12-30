@@ -49,6 +49,12 @@ const quickActions = [
     icon: Grid3X3,
   },
   {
+    title: "Manage Users",
+    description: "Manage user roles and permissions",
+    href: "/admin/users",
+    icon: Users,
+  },
+  {
     title: "Analytics",
     description: "View sales analytics",
     href: "/admin/analytics",

@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Order from "@/models/Order";
-import Product from "@/models/Product";
-import User from "@/models/User";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -13,54 +10,50 @@ export async function GET(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
     // Get current date and date from 30 days ago
     const now = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get total counts
+    // Get total counts using Prisma
     const [totalProducts, totalOrders, totalCustomers, totalRevenue] = await Promise.all([
-      Product.countDocuments({ isActive: true }),
-      Order.countDocuments(),
-      User.countDocuments({ role: "user" }),
-      Order.aggregate([
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total" }
-          }
+      prisma.product.count({ where: { isActive: true } }),
+      prisma.order.count(),
+      prisma.user.count({ where: { role: "user" } }),
+      prisma.order.aggregate({
+        _sum: {
+          total: true
         }
-      ])
+      })
     ]);
 
     // Get counts from last 30 days
     const [recentProducts, recentOrders, recentCustomers, recentRevenue] = await Promise.all([
-      Product.countDocuments({
-        isActive: true,
-        createdAt: { $gte: thirtyDaysAgo }
-      }),
-      Order.countDocuments({
-        createdAt: { $gte: thirtyDaysAgo }
-      }),
-      User.countDocuments({
-        role: "user",
-        createdAt: { $gte: thirtyDaysAgo }
-      }),
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: thirtyDaysAgo }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total" }
-          }
+      prisma.product.count({
+        where: {
+          isActive: true,
+          createdAt: { gte: thirtyDaysAgo }
         }
-      ])
+      }),
+      prisma.order.count({
+        where: {
+          createdAt: { gte: thirtyDaysAgo }
+        }
+      }),
+      prisma.user.count({
+        where: {
+          role: "user",
+          createdAt: { gte: thirtyDaysAgo }
+        }
+      }),
+      prisma.order.aggregate({
+        where: {
+          createdAt: { gte: thirtyDaysAgo }
+        },
+        _sum: {
+          total: true
+        }
+      })
     ]);
 
     // Calculate percentage changes (simplified - in a real app you'd compare with previous period)
@@ -74,12 +67,12 @@ export async function GET(request: NextRequest) {
       totalProducts,
       totalOrders,
       totalCustomers,
-      totalRevenue: totalRevenue[0]?.total || 0,
+      totalRevenue: totalRevenue._sum.total || 0,
       productsChange: calculateChange(totalProducts, recentProducts),
       ordersChange: calculateChange(totalOrders, recentOrders),
       customersChange: calculateChange(totalCustomers, recentCustomers),
-      revenueChange: totalRevenue[0]?.total ?
-        calculateChange(totalRevenue[0].total, recentRevenue[0]?.total || 0) : "0%",
+      revenueChange: totalRevenue._sum.total ?
+        calculateChange(totalRevenue._sum.total, recentRevenue._sum.total || 0) : "0%",
     };
 
     return NextResponse.json(stats);

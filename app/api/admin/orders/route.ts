@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Order from "@/models/Order";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -12,20 +11,26 @@ export async function GET(request: NextRequest) {
       return authResult;
     }
 
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "0");
 
-    const query = Order.find()
-      .populate("user", "name email")
-      .sort({ createdAt: -1 });
-
-    if (limit > 0) {
-      query.limit(limit);
-    }
-
-    const orders = await query.lean();
+    const orders = await prisma.order.findMany({
+      take: limit > 0 ? limit : undefined,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        shippingAddress: true,
+        items: {
+          include: {
+            product: {
+              select: { id: true, name: true, price: true, discountedPrice: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
     return NextResponse.json({ orders });
   } catch (error: any) {

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Category from "@/models/Category";
-import mongoose from "mongoose";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(
@@ -15,18 +13,11 @@ export async function GET(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid category ID" },
-        { status: 400 }
-      );
-    }
-
-    const category = await Category.findById(id).lean();
+    const category = await prisma.category.findUnique({
+      where: { id },
+    });
 
     if (!category) {
       return NextResponse.json(
@@ -59,30 +50,25 @@ export async function PUT(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid category ID" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const { name, description, image, subcategories, isActive } = body;
 
-    const category = await Category.findById(id);
+    // Check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id },
+    });
 
-    if (!category) {
+    if (!existingCategory) {
       return NextResponse.json(
         { message: "Category not found" },
         { status: 404 }
       );
     }
 
-    // Update fields
+    // Prepare update data
+    const updateData: any = {};
+
     if (name !== undefined) {
       if (!name || typeof name !== "string" || name.trim().length === 0) {
         return NextResponse.json(
@@ -90,9 +76,9 @@ export async function PUT(
           { status: 400 }
         );
       }
-      category.name = name.trim();
+      updateData.name = name.trim();
       // Regenerate slug when name changes
-      category.slug = name
+      updateData.slug = name
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -100,24 +86,27 @@ export async function PUT(
     }
 
     if (description !== undefined) {
-      category.description = description?.trim() || undefined;
+      updateData.description = description?.trim() || null;
     }
 
     if (image !== undefined) {
-      category.image = image?.trim() || undefined;
+      updateData.image = image?.trim() || null;
     }
 
     if (subcategories !== undefined) {
-      category.subcategories = Array.isArray(subcategories)
+      updateData.subcategories = Array.isArray(subcategories)
         ? subcategories.filter(sub => sub && typeof sub === "string").map(sub => sub.trim())
         : [];
     }
 
     if (isActive !== undefined) {
-      category.isActive = Boolean(isActive);
+      updateData.isActive = Boolean(isActive);
     }
 
-    await category.save();
+    const category = await prisma.category.update({
+      where: { id },
+      data: updateData,
+    });
 
     return NextResponse.json({
       success: true,
@@ -127,8 +116,8 @@ export async function PUT(
   } catch (error: any) {
     console.error("Error updating category:", error);
 
-    // Handle duplicate key error
-    if (error.code === 11000) {
+    // Handle unique constraint violations
+    if (error.code === "P2002") {
       return NextResponse.json(
         { message: "Category with this name or slug already exists" },
         { status: 400 }
@@ -153,17 +142,7 @@ export async function PATCH(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid category ID" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const { isActive } = body;
 
@@ -174,11 +153,10 @@ export async function PATCH(
       );
     }
 
-    const category = await Category.findByIdAndUpdate(
-      id,
-      { isActive: Boolean(isActive) },
-      { new: true }
-    ).lean();
+    const category = await prisma.category.update({
+      where: { id },
+      data: { isActive: Boolean(isActive) },
+    });
 
     if (!category) {
       return NextResponse.json(
@@ -212,19 +190,13 @@ export async function DELETE(
       return authResult;
     }
 
-    await connectDB();
-
     const { id } = params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid category ID" },
-        { status: 400 }
-      );
-    }
+    // Check if category exists and get it before deletion
+    const category = await prisma.category.findUnique({
+      where: { id },
+    });
 
-    // Check if category exists
-    const category = await Category.findById(id);
     if (!category) {
       return NextResponse.json(
         { message: "Category not found" },
@@ -235,7 +207,9 @@ export async function DELETE(
     // TODO: Check if category is being used by any products before deleting
     // For now, we'll allow deletion but this should be enhanced
 
-    await Category.findByIdAndDelete(id);
+    await prisma.category.delete({
+      where: { id },
+    });
 
     return NextResponse.json({
       success: true,

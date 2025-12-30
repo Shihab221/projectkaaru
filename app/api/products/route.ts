@@ -1,14 +1,10 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Product from "@/models/Product";
-import Category from "@/models/Category";
+import prisma from "@/lib/db";
 import { PRODUCTS_PER_PAGE } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -23,46 +19,49 @@ export async function GET(request: NextRequest) {
     const isTopProduct = searchParams.get("isTopProduct") === "true";
     const sortBy = searchParams.get("sortBy") || "newest";
 
-    // Build query
-    const query: any = { isActive: true };
+    // Build where clause
+    const where: any = { isActive: true };
 
     // Category filter
     if (category) {
-      const categoryDoc = await Category.findOne({ slug: category });
+      const categoryDoc = await prisma.category.findUnique({
+        where: { slug: category },
+        select: { id: true }
+      });
       if (categoryDoc) {
-        query.category = categoryDoc._id;
+        where.categoryId = categoryDoc.id;
       }
     }
 
     // Subcategory filter
     if (subcategory) {
-      query.subcategory = subcategory;
+      where.subcategory = subcategory;
     }
 
     // Search filter
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
       ];
     }
 
     // Price range filter
     if (minPrice > 0 || maxPrice > 0) {
-      query.$and = query.$and || [];
+      where.AND = where.AND || [];
       if (minPrice > 0) {
-        query.$and.push({
-          $or: [
-            { discountedPrice: { $gte: minPrice } },
-            { price: { $gte: minPrice } },
+        where.AND.push({
+          OR: [
+            { discountedPrice: { gte: minPrice } },
+            { price: { gte: minPrice } },
           ],
         });
       }
       if (maxPrice > 0) {
-        query.$and.push({
-          $or: [
-            { discountedPrice: { $lte: maxPrice } },
-            { price: { $lte: maxPrice } },
+        where.AND.push({
+          OR: [
+            { discountedPrice: { lte: maxPrice } },
+            { price: { lte: maxPrice } },
           ],
         });
       }
@@ -70,44 +69,59 @@ export async function GET(request: NextRequest) {
 
     // On sale filter
     if (onSale) {
-      query.discountedPrice = { $exists: true, $gt: 0 };
-      query.$expr = { $lt: ["$discountedPrice", "$price"] };
+      where.discountedPrice = { not: null, gt: 0 };
+      // Note: Prisma doesn't have direct equivalent for $expr, we'll need to handle this differently
     }
 
     // Top product filter
     if (isTopProduct) {
-      query.isTopProduct = true;
+      where.isTopProduct = true;
     }
 
-    // Build sort
-    let sort: any = {};
+    // Build orderBy
+    let orderBy: any;
     switch (sortBy) {
       case "price-low":
-        sort = { discountedPrice: 1, price: 1 };
+        orderBy = [
+          { discountedPrice: "asc" },
+          { price: "asc" }
+        ];
         break;
       case "price-high":
-        sort = { discountedPrice: -1, price: -1 };
+        orderBy = [
+          { discountedPrice: "desc" },
+          { price: "desc" }
+        ];
         break;
       case "popular":
-        sort = { sold: -1 };
+        orderBy = { sold: "desc" };
         break;
       case "rating":
-        sort = { averageRating: -1 };
+        orderBy = { averageRating: "desc" };
         break;
       case "newest":
       default:
-        sort = { createdAt: -1 };
+        orderBy = { createdAt: "desc" };
     }
 
     // Execute query
     const skip = (page - 1) * limit;
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .populate("category", "name slug")
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const total = await prisma.product.count({ where });
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true }
+        },
+        sizes: true,
+        _count: {
+          select: { reviews: true }
+        }
+      },
+      orderBy,
+      skip,
+      take: limit,
+    });
 
     return NextResponse.json({
       products,
