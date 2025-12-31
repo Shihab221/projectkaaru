@@ -212,9 +212,7 @@ model Order {
   shippingAddress      ShippingAddress?
 
   @@map("orders")
-}
-
-// Enums
+}// Enums
 enum Role {
   user
   admin
@@ -234,3 +232,5 @@ enum OrderStatus {
   delivered
   cancelled
 }
+
+
