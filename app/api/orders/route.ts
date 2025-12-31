@@ -40,28 +40,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use Prisma transaction to ensure data consistency
+    // Use Prisma transaction to ensure data consistency with increased timeout
     const result = await prisma.$transaction(async (tx) => {
-      // Validate and update product stock
-      for (const item of items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.product },
-          include: { sizes: true }
-        });
+      // First, validate stock for all items in one query
+      const productIds = items.map(item => item.product);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        include: { sizes: true }
+      });
 
+      // Create a map for quick lookup
+      const productMap = new Map(products.map(p => [p.id, p]));
+
+      // Validate stock for each item
+      for (const item of items) {
+        const product = productMap.get(item.product);
         if (!product) {
           throw new Error(`Product ${item.product} not found`);
         }
 
         // Check stock based on size or default stock
         let availableStock = product.stock;
-        let sizeToUpdate = null;
-
         if (item.size && product.sizes) {
           const sizeData = product.sizes.find(s => s.name === item.size);
           if (sizeData) {
             availableStock = sizeData.stock;
-            sizeToUpdate = sizeData;
           }
         }
 
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Update stock and sold count for each product
+      // Update stock and sold count for each product (batch operations where possible)
       for (const item of items) {
         // Update product stock
         if (item.size) {
@@ -93,12 +96,16 @@ export async function POST(request: NextRequest) {
             data: {
               stock: {
                 decrement: item.quantity
+              },
+              sold: {
+                increment: item.quantity
               }
             }
           });
+          continue; // Skip the separate sold update since we did it above
         }
 
-        // Update sold count
+        // Update sold count (only for size-specific products)
         await tx.product.update({
           where: { id: item.product },
           data: {
@@ -109,7 +116,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Generate unique order number
+      // Generate unique order number (more efficient)
       const generateOrderNumber = () => {
         const date = new Date();
         const timestamp = date.getTime();
@@ -117,25 +124,19 @@ export async function POST(request: NextRequest) {
         return `PK${timestamp}${randomSuffix}`;
       };
 
-      let orderNumber = generateOrderNumber();
-      let orderExists = true;
+      let orderNumber;
       let attempts = 0;
-
-      // Ensure unique order number
-      while (orderExists && attempts < 5) {
+      do {
+        orderNumber = generateOrderNumber();
         const existingOrder = await tx.order.findUnique({
           where: { orderNumber }
         });
-        if (!existingOrder) {
-          orderExists = false;
-        } else {
-          orderNumber = generateOrderNumber();
-          attempts++;
-        }
-      }
+        if (!existingOrder) break;
+        attempts++;
+      } while (attempts < 10); // Allow more attempts but should be very rare
 
-      if (attempts >= 5) {
-        throw new Error("Failed to generate unique order number");
+      if (attempts >= 10) {
+        throw new Error("Failed to generate unique order number after multiple attempts");
       }
 
       // Create order with shipping address
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
       });
 
       return order;
-    });
+    }, { timeout: 15000 }); // Increase timeout to 15 seconds
 
     return NextResponse.json(
       {

@@ -160,12 +160,12 @@ export default function ProductDetailPage() {
 
     dispatch(
       addToCart({
-        _id: product._id,
+        _id: product.id,
         name: product.name,
         slug: product.slug,
         price: currentPrice.price,
         discountedPrice: currentPrice.discountedPrice,
-        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
+        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
         quantity,
         stock: getCurrentStock(),
         size: selectedSize || undefined,
@@ -184,12 +184,12 @@ export default function ProductDetailPage() {
     // Add product to cart with all selected options
     dispatch(
       addToCart({
-        _id: product._id,
+        _id: product.id,
         name: product.name,
         slug: product.slug,
         price: currentPrice.price,
         discountedPrice: currentPrice.discountedPrice,
-        image: (product.images && product.images.length > 0 && product._id) ? `/api/images/${product._id}/0` : "",
+        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
         quantity,
         stock: getCurrentStock(),
         size: selectedSize || undefined,
@@ -336,9 +336,9 @@ export default function ProductDetailPage() {
               animate={{ opacity: 1 }}
               className="aspect-square rounded-2xl overflow-hidden bg-gray-100 relative"
             >
-              {product.images && product.images.length > selectedImage && product._id ? (
+              {product.images && product.images.length > selectedImage && product.id ? (
                 <Image
-                  src={`/api/images/${product._id}/${selectedImage}`}
+                  src={`/api/images/${product.id}/${selectedImage}`}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -379,9 +379,9 @@ export default function ProductDetailPage() {
                         : "border-transparent hover:border-gray-300"
                     }`}
                   >
-                    {product._id ? (
+                    {product.id ? (
                       <Image
-                        src={`/api/images/${product._id}/${index}`}
+                        src={`/api/images/${product.id}/${index}`}
                         alt={`${product.name} ${index + 1}`}
                         width={80}
                         height={80}

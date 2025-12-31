@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -34,24 +35,58 @@ const categories = [
 ];
 
 async function main() {
-  console.log('Start seeding categories...');
+  console.log('🌱 Starting database seeding...');
 
-  for (const category of categories) {
-    const existingCategory = await prisma.category.findUnique({
-      where: { slug: category.slug }
+  try {
+    // Seed categories
+    console.log('📁 Seeding categories...');
+    for (const category of categories) {
+      const existingCategory = await prisma.category.findUnique({
+        where: { slug: category.slug }
+      });
+
+      if (!existingCategory) {
+        await prisma.category.create({
+          data: category
+        });
+        console.log(`✅ Created category: ${category.name}`);
+      } else {
+        console.log(`⚠️  Category already exists: ${category.name}`);
+      }
+    }
+
+    // Create admin user
+    console.log('👤 Creating admin user...');
+    const adminEmail = "admin@projectkaru.com";
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail }
     });
 
-    if (!existingCategory) {
-      await prisma.category.create({
-        data: category
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash("12345678", 12);
+      await prisma.user.create({
+        data: {
+          name: "Super Admin",
+          email: adminEmail,
+          password: hashedPassword,
+          role: "admin",
+        }
       });
-      console.log(`Created category: ${category.name}`);
+      console.log('✅ Admin user created');
     } else {
-      console.log(`Category already exists: ${category.name}`);
+      console.log('⚠️  Admin user already exists');
     }
-  }
 
-  console.log('Seeding finished.');
+    console.log('\n🎉 Database seeded successfully!');
+    console.log('\n📋 Admin Credentials:');
+    console.log('   Email: admin@projectkaru.com');
+    console.log('   Password: 12345678');
+    console.log('\n⚠️  IMPORTANT: Change this password after first login!');
+
+  } catch (error) {
+    console.error('❌ Seeding failed:', error);
+    throw error;
+  }
 }
 
 main()

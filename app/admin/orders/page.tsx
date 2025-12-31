@@ -28,10 +28,10 @@ import Link from "next/link";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
 
 interface Order {
-  _id: string;
+  id: string;
   orderNumber: string;
   user: {
-    _id: string;
+    id: string;
     name: string;
     email: string;
   };
@@ -144,7 +144,7 @@ export default function AdminOrdersPage() {
 
       setOrders((prev) =>
         prev.map((order) =>
-          order._id === orderId ? { ...order, status: newStatus as Order["status"] } : order
+          order.id === orderId ? { ...order, status: newStatus as Order["status"] } : order
         )
       );
       toast.success("Order status updated");
@@ -296,7 +296,7 @@ export default function AdminOrdersPage() {
                     const StatusIcon = statusIcons[order.status];
                     return (
                       <motion.tr
-                        key={order._id}
+                        key={order.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
@@ -506,7 +506,7 @@ export default function AdminOrdersPage() {
                       (status) => (
                         <button
                           key={status}
-                          onClick={() => updateOrderStatus(selectedOrder._id, status)}
+                          onClick={() => updateOrderStatus(selectedOrder.id, status)}
                           disabled={isUpdating || selectedOrder.status === status}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                             selectedOrder.status === status

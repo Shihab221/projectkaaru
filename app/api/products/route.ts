@@ -114,6 +114,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, name: true, slug: true }
         },
         sizes: true,
+        images: true,
         _count: {
           select: { reviews: true }
         }

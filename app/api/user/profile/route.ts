@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import User from "@/models/User";
+import prisma from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function PUT(request: NextRequest) {
@@ -11,8 +10,6 @@ export async function PUT(request: NextRequest) {
     if (!payload) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    await connectDB();
 
     const { name, phone, address } = await request.json();
 
@@ -25,24 +22,39 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user
-    const user = await User.findByIdAndUpdate(
-      payload.userId,
-      {
+    const user = await prisma.user.update({
+      where: { id: payload.userId },
+      data: {
         name: name.trim(),
-        phone: phone?.trim() || undefined,
-        address: address || undefined,
+        phone: phone?.trim() || null,
+        address: address ? {
+          upsert: {
+            create: {
+              street: address.street || "",
+              city: address.city || "",
+              state: address.state || "",
+              postalCode: address.postalCode || "",
+              country: address.country || "Bangladesh",
+            },
+            update: {
+              street: address.street || "",
+              city: address.city || "",
+              state: address.state || "",
+              postalCode: address.postalCode || "",
+              country: address.country || "Bangladesh",
+            }
+          }
+        } : undefined,
       },
-      { new: true }
-    );
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+      include: {
+        address: true,
+      }
+    });
 
     return NextResponse.json({
       message: "Profile updated successfully",
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -67,9 +79,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await connectDB();
-
-    const user = await User.findById(payload.userId);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      include: {
+        address: true,
+      }
+    });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -77,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -93,6 +108,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 
 
 

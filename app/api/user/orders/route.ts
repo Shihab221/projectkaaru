@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Order from "@/models/Order";
+import prisma from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -12,12 +11,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    await connectDB();
-
-    const orders = await Order.find({ user: payload.userId })
-      .select("orderNumber items total status createdAt")
-      .sort({ createdAt: -1 })
-      .lean();
+    const orders = await prisma.order.findMany({
+      where: { userId: payload.userId },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        status: true,
+        createdAt: true,
+        items: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            price: true,
+            quantity: true,
+            size: true,
+            color: true,
+            backgroundColor: true,
+            borderColor: true,
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
     return NextResponse.json({ orders });
   } catch (error: any) {

@@ -6,7 +6,8 @@ A modern, full-stack e-commerce website for selling 3D printed products like hom
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=for-the-badge&logo=typescript)
-![MongoDB](https://img.shields.io/badge/MongoDB-8.0-green?style=for-the-badge&logo=mongodb)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge&logo=postgresql)
+![Prisma](https://img.shields.io/badge/Prisma-6.19-2D3748?style=for-the-badge&logo=prisma)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)
 
 ## ✨ Features
@@ -25,7 +26,7 @@ A modern, full-stack e-commerce website for selling 3D printed products like hom
 - **Frontend**: Next.js 14 (App Router), React, TypeScript
 - **Styling**: Tailwind CSS, Framer Motion
 - **State Management**: Redux Toolkit
-- **Database**: MongoDB with Mongoose
+- **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: JWT with HTTP-only cookies
 - **Icons**: Lucide React
 
@@ -84,8 +85,9 @@ npm install
 
 Create a `.env.local` file:
 ```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/projectkaru
+# Database (PostgreSQL)
+DATABASE_URL="postgresql://username:password@localhost:5432/projectkaru"
+DIRECT_URL="postgresql://username:password@localhost:5432/projectkaru"
 
 # JWT Secret (generate a random string)
 JWT_SECRET=your-super-secret-jwt-key

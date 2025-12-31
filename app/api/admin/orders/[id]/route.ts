@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Order from "@/models/Order";
+import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
 export async function GET(
@@ -14,11 +13,22 @@ export async function GET(
       return authResult;
     }
 
-    await connectDB();
-
-    const order = await Order.findById(params.id)
-      .populate("user", "name email")
-      .lean();
+    const order = await prisma.order.findUnique({
+      where: { id: params.id },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        shippingAddress: true,
+        items: {
+          include: {
+            product: {
+              select: { id: true, name: true, slug: true, price: true, discountedPrice: true }
+            }
+          }
+        }
+      }
+    });
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -43,8 +53,6 @@ export async function PUT(
     if (authResult instanceof NextResponse) {
       return authResult;
     }
-
-    await connectDB();
 
     const { status, paymentStatus, trackingNumber, notes } = await request.json();
 
@@ -79,15 +87,23 @@ export async function PUT(
       updateData.notes = notes;
     }
 
-    const order = await Order.findByIdAndUpdate(
-      params.id,
-      updateData,
-      { new: true }
-    ).populate("user", "name email");
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+    const order = await prisma.order.update({
+      where: { id: params.id },
+      data: updateData,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        shippingAddress: true,
+        items: {
+          include: {
+            product: {
+              select: { id: true, name: true, slug: true, price: true, discountedPrice: true }
+            }
+          }
+        }
+      }
+    });
 
     return NextResponse.json({
       message: "Order updated successfully",
@@ -101,6 +117,7 @@ export async function PUT(
     );
   }
 }
+
 
 
 
