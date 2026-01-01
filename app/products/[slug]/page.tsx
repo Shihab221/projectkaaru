@@ -444,10 +444,12 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              {product.description}
-            </p>
+            {/* Short Description (after title) */}
+            {product.shortDescription && (
+              <p className="text-gray-600 mb-4 leading-relaxed">
+                {product.shortDescription}
+              </p>
+            )}
 
 
             {/* Size Selection */}
@@ -628,6 +630,14 @@ export default function ProductDetailPage() {
               </div>
             </div>
           </motion.div>
+        </div>
+
+        {/* Full Description (under image/cart section) */}
+        <div className="mt-8 bg-white rounded-2xl p-6 border-2 border-gray-200 max-w-none overflow-hidden">
+          <h3 className="text-xl font-bold text-secondary mb-4">Product Details</h3>
+          <div className="text-gray-600 leading-relaxed whitespace-pre-line break-words overflow-wrap-anywhere">
+            {product.description}
+          </div>
         </div>
 
         {/* Related Products */}

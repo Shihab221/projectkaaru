@@ -21,7 +21,7 @@ import { selectIsAdmin, selectIsAuthenticated, selectAuthInitialized } from "@/r
 import toast from "react-hot-toast";
 
 interface Category {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   description?: string;
@@ -119,7 +119,7 @@ export default function AdminCategories() {
     if (!editingCategory) return;
 
     try {
-      const res = await fetch(`/api/admin/categories/${editingCategory._id}`, {
+      const res = await fetch(`/api/admin/categories/${editingCategory.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -196,7 +196,7 @@ export default function AdminCategories() {
     try {
       const updatedSubcategories = [...selectedCategoryForSub.subcategories, subcategoryForm.subcategory];
 
-      const res = await fetch(`/api/admin/categories/${selectedCategoryForSub._id}`, {
+      const res = await fetch(`/api/admin/categories/${selectedCategoryForSub.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -224,7 +224,7 @@ export default function AdminCategories() {
   };
 
   const handleRemoveSubcategory = async (categoryId: string, subcategoryToRemove: string) => {
-    const category = categories.find(c => c._id === categoryId);
+    const category = categories.find(c => c.id === categoryId);
     if (!category) return;
 
     const updatedSubcategories = category.subcategories.filter(sub => sub !== subcategoryToRemove);
@@ -339,7 +339,7 @@ export default function AdminCategories() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category, index) => (
               <motion.div
-                key={category._id}
+                key={category.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -350,7 +350,7 @@ export default function AdminCategories() {
                     <Package className="w-6 h-6 text-primary" />
                   </div>
                   <button
-                    onClick={() => handleToggleActive(category._id, category.isActive)}
+                    onClick={() => handleToggleActive(category.id, category.isActive)}
                     className={`p-1 rounded-lg transition-colors ${
                       category.isActive
                         ? "text-green-600 hover:bg-green-50"
@@ -386,7 +386,7 @@ export default function AdminCategories() {
                         >
                           {sub}
                           <button
-                            onClick={() => handleRemoveSubcategory(category._id, sub)}
+                            onClick={() => handleRemoveSubcategory(category.id, sub)}
                             className="hover:text-red-500 ml-1"
                           >
                             ×
@@ -413,7 +413,7 @@ export default function AdminCategories() {
                     Add Sub
                   </button>
                   <button
-                    onClick={() => handleDeleteCategory(category._id)}
+                    onClick={() => handleDeleteCategory(category.id)}
                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />

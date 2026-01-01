@@ -90,7 +90,7 @@ export function Categories() {
               },
             },
           }}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-stretch"
         >
           {categories.map((category) => (
             <motion.div
@@ -99,6 +99,7 @@ export function Categories() {
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 },
               }}
+              className="min-h-[140px] md:min-h-[160px]"
             >
               <Link
                 href={
@@ -108,17 +109,19 @@ export function Categories() {
                     ? "/products?isTopProduct=true"
                     : `/products?category=${category.slug}`
                 }
-                className="card card-hover p-4 md:p-6 text-center group block"
+                className="card card-hover p-4 md:p-6 text-center group block h-full flex flex-col"
               >
-                <div
-                  className={`w-14 h-14 ${category.color} rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}
-                >
-                  <category.icon className="w-7 h-7 text-white" />
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <div
+                    className={`w-14 h-14 ${category.color} rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}
+                  >
+                    <category.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-secondary mb-2 text-sm md:text-base">
+                    {category.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 leading-tight">{category.description}</p>
                 </div>
-                <h3 className="font-semibold text-secondary mb-1">
-                  {category.name}
-                </h3>
-                <p className="text-xs text-gray-500">{category.description}</p>
               </Link>
             </motion.div>
           ))}
