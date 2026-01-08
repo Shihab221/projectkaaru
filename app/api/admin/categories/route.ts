@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 export async function GET(request: NextRequest) {
   try {
     // Check admin auth
@@ -14,10 +24,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({
-      success: true,
-      categories,
-    });
+    // Prevent caching with proper headers
+    return NextResponse.json(
+      {
+        success: true,
+        categories,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     console.error("Error fetching categories:", error);
     return NextResponse.json(
@@ -81,11 +95,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Category created successfully",
-      category,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Category created successfully",
+        category,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error: any) {
     console.error("Error creating category:", error);
 

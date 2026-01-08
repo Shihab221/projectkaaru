@@ -10,6 +10,7 @@ import {
   Plus,
   Loader2,
   ImagePlus,
+  RefreshCw,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectAuthInitialized, selectIsAuthenticated } from "@/redux/slices/authSlice";
@@ -88,6 +89,7 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRefreshingCategories, setIsRefreshingCategories] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<Array<{ data: string; contentType: string; filename: string }>>([]);
@@ -117,13 +119,34 @@ export default function NewProductPage() {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
+  // Refetch categories when page gains focus (useful when returning from category management)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchCategories();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  const fetchCategories = async (showLoading = false) => {
     try {
-      const res = await fetch("/api/categories");
+      if (showLoading) setIsRefreshingCategories(true);
+      // Add cache-busting timestamp to ensure fresh data
+      const res = await fetch(`/api/categories?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
       const data = await res.json();
       setCategories(data.categories || []);
+      if (showLoading) {
+        toast.success("Categories refreshed");
+      }
     } catch (error) {
       console.error("Failed to fetch categories:", error);
+      if (showLoading) {
+        toast.error("Failed to refresh categories");
+      }
+    } finally {
+      if (showLoading) setIsRefreshingCategories(false);
     }
   };
 
@@ -550,9 +573,21 @@ export default function NewProductPage() {
 
             {/* Category */}
             <div>
-              <h2 className="text-lg font-semibold text-secondary mb-4">
-                Category
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-secondary">
+                  Category
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => fetchCategories(true)}
+                  disabled={isRefreshingCategories}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-secondary border border-gray-300 rounded-lg hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh categories to see latest subcategories"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshingCategories ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">

@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { authMiddleware } from "@/lib/auth";
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -26,10 +36,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      category,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        category,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     console.error("Error fetching category:", error);
     return NextResponse.json(
@@ -108,11 +121,14 @@ export async function PUT(
       data: updateData,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Category updated successfully",
-      category,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Category updated successfully",
+        category,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error: any) {
     console.error("Error updating category:", error);
 
@@ -165,11 +181,14 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Category ${isActive ? "activated" : "deactivated"} successfully`,
-      category,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Category ${isActive ? "activated" : "deactivated"} successfully`,
+        category,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     console.error("Error updating category status:", error);
     return NextResponse.json(
@@ -211,10 +230,13 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Category deleted successfully",
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Category deleted successfully",
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     console.error("Error deleting category:", error);
     return NextResponse.json(
