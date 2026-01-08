@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { trackAddToCart } from "@/lib/analytics";
 
 // Cart item interface
 export interface CartItem {
@@ -64,16 +65,33 @@ const cartSlice = createSlice({
           item.selectedBorderColor === action.payload.selectedBorderColor
       );
 
+      const item = action.payload;
+      const finalQuantity = existingIndex >= 0 
+        ? Math.min(state.items[existingIndex].quantity + item.quantity, item.stock)
+        : item.quantity;
+
       if (existingIndex >= 0) {
         // Update quantity if item exists
-        const newQuantity = state.items[existingIndex].quantity + action.payload.quantity;
-        state.items[existingIndex].quantity = Math.min(newQuantity, action.payload.stock);
+        state.items[existingIndex].quantity = finalQuantity;
       } else {
         // Add new item
         state.items.push(action.payload);
       }
 
       saveCartToStorage(state.items);
+
+      // Track AddToCart event
+      if (typeof window !== "undefined") {
+        const price = item.discountedPrice || item.price;
+        trackAddToCart(
+          price * item.quantity,
+          "BDT",
+          item.id,
+          item.name,
+          undefined, // category - can be enhanced later
+          item.quantity
+        );
+      }
     },
 
     // Remove item from cart

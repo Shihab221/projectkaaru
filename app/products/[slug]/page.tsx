@@ -31,6 +31,7 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
+import { trackViewContent } from "@/lib/analytics";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -97,6 +98,20 @@ export default function ProductDetailPage() {
       setSelectedSize(product.sizes[0].name);
     }
   }, [product]);
+
+  // Track ViewContent when product is loaded
+  useEffect(() => {
+    if (product) {
+      const price = currentPrice.discountedPrice || currentPrice.price;
+      trackViewContent(
+        product.id,
+        product.name,
+        product.category?.name,
+        price,
+        "BDT"
+      );
+    }
+  }, [product?.id]); // Track once per product
 
   // Get current price based on selected size or default
   const getCurrentPrice = () => {

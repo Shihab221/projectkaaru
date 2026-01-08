@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartSidebar } from "@/components/cart/CartSidebar";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { Toaster } from "react-hot-toast";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 
 export const metadata: Metadata = {
   title: "ProjectKaru | Custom 3D Printed Products",
@@ -32,9 +33,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || "";
+
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
+        <MetaPixel pixelId={metaPixelId} />
         <ReduxProvider>
           <Header />
           <main className="flex-1">{children}</main>

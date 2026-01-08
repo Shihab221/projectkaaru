@@ -97,6 +97,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # WhatsApp Number
 NEXT_PUBLIC_WHATSAPP_NUMBER=8801712345678
+
+# Meta Pixel (Facebook Pixel) ID
+NEXT_PUBLIC_META_PIXEL_ID=2398720360548171
 ```
 
 4. **Seed the database (optional)**

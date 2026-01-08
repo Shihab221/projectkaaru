@@ -26,6 +26,7 @@ import { formatPrice } from "@/lib/utils";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
 
 interface CheckoutForm {
   // Customer Details
@@ -111,6 +112,29 @@ export default function CheckoutPage() {
       router.replace("/products");
     }
   }, [cartItems, orderPlaced, router]);
+
+  // Track InitiateCheckout when page loads and cart has items
+  useEffect(() => {
+    if (isAuthenticated && cartItems.length > 0) {
+      // Calculate totals for tracking
+      const itemsTotal = cartItems.reduce(
+        (total, item) => total + (item.discountedPrice || item.price) * item.quantity,
+        0
+      );
+      const shippingCost = itemsTotal > 1000 ? 0 : 60;
+      const checkoutTotal = itemsTotal + shippingCost;
+
+      const contents = cartItems.map((item) => ({
+        id: item._id || item.id,
+        name: item.name,
+        category: item.category || undefined,
+        quantity: item.quantity,
+        item_price: item.discountedPrice || item.price,
+      }));
+
+      trackInitiateCheckout(checkoutTotal, "BDT", contents);
+    }
+  }, [isAuthenticated, cartItems.length]); // Only track once when page loads
 
   // Calculate totals
   const itemsTotal = cartItems.reduce(
@@ -215,6 +239,17 @@ export default function CheckoutPage() {
       if (!res.ok) {
         throw new Error(data.error || "Failed to place order");
       }
+
+      // Track Purchase event
+      const contents = cartItems.map((item) => ({
+        id: item._id || item.id,
+        name: item.name,
+        category: item.category || undefined,
+        quantity: item.quantity,
+        item_price: item.discountedPrice || item.price,
+      }));
+
+      trackPurchase(total, "BDT", contents);
 
       // Clear cart and show success
       dispatch(clearCart());
