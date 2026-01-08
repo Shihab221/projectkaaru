@@ -20,11 +20,18 @@ export const metadata: Metadata = {
     "organizers",
     "Bangladesh",
     "ProjectKaru",
+    "CAD design",
+    "mechanical design",
   ],
   openGraph: {
     title: "ProjectKaru | Custom 3D Printed Products",
     description: "Custom 3D Printed Wonders - Home Decor, Keychains, Organizers & More",
     type: "website",
+  },
+  icons: {
+    icon: "/Logo.png",
+    shortcut: "/Logo.png",
+    apple: "/Logo.png",
   },
 };
 

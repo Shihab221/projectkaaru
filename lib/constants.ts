@@ -90,7 +90,7 @@ export const ORDERS_PER_PAGE = 10;
 
 // Social links
 export const SOCIAL_LINKS = {
-  facebook: "https://facebook.com/projectkaru",
+  facebook: "https://facebook.com/projectkaru2025",
   whatsapp: "https://wa.me/8801712345678",
   linkedin: "https://linkedin.com/company/projectkaru",
   instagram: "https://instagram.com/projectkaru",
@@ -100,6 +100,7 @@ export const SOCIAL_LINKS = {
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
+  { label: "CAD & 3D Print", href: "/cad-3d-print" },
   { label: "Categories", href: "/categories" },
   { label: "Contact", href: "/contact" },
 ];

@@ -40,7 +40,7 @@ interface CheckoutForm {
   postalCode: string;
   country: string;
   // Payment
-  paymentMethod: "cod" | "bkash" | "nagad" | "card";
+  paymentMethod: "cod" | "bkash" | "nagad";
   transactionId: string;
   notes: string;
 }
@@ -62,12 +62,6 @@ const paymentMethods = [
     id: "nagad" as const,
     name: "Nagad",
     description: "Pay with Nagad mobile banking",
-    icon: CreditCard,
-  },
-  {
-    id: "card" as const,
-    name: "Card Payment",
-    description: "Pay with credit/debit card",
     icon: CreditCard,
   },
 ];
@@ -548,25 +542,57 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {/* Transaction ID for mobile payments */}
+              {/* Mobile Payment Instructions */}
               {(formData.paymentMethod === "bkash" ||
                 formData.paymentMethod === "nagad") && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-secondary mb-1.5">
-                    Transaction ID *
-                  </label>
-                  <input
-                    type="text"
-                    name="transactionId"
-                    value={formData.transactionId}
-                    onChange={handleInputChange}
-                    className="input"
-                    placeholder="Enter transaction ID"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the transaction ID from your {formData.paymentMethod} payment confirmation
-                  </p>
+                <div className="mt-4 space-y-4">
+                  {/* Account Information */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                      {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Payment Details
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">
+                          {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Number:
+                        </span>
+                        <span className="text-lg font-bold text-blue-800">
+                          {formData.paymentMethod === "bkash" ? "01776603125" : "01608144956"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">Amount:</span>
+                        <span className="text-lg font-bold text-blue-800">
+                          ৳{total.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm text-yellow-800">
+                        📱 Send the exact amount (৳{total.toFixed(2)}) to the above {formData.paymentMethod} number.
+                        After successful payment, enter the Transaction ID below.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Transaction ID Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">
+                      Transaction ID *
+                    </label>
+                    <input
+                      type="text"
+                      name="transactionId"
+                      value={formData.transactionId}
+                      onChange={handleInputChange}
+                      className="input"
+                      placeholder="Enter transaction ID"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the transaction ID from your {formData.paymentMethod} payment confirmation SMS
+                    </p>
+                  </div>
                 </div>
               )}
             </motion.div>

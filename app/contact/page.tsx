@@ -4,15 +4,10 @@ import { motion } from "framer-motion";
 import {
   Phone,
   Mail,
-  MapPin,
   MessageCircle,
-  Facebook,
-  Instagram,
-  Linkedin,
-  Clock,
   Send,
+  Github,
 } from "lucide-react";
-import { SOCIAL_LINKS } from "@/lib/constants";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -55,35 +50,6 @@ export default function ContactPage() {
     }
   };
 
-  const contactInfo = [
-    {
-      icon: Phone,
-      title: "Phone Numbers",
-      details: [
-        { label: "Primary", value: "+880 1613-371875", href: "tel:+8801613371875" },
-        { label: "WhatsApp", value: "+880 1712-345678", href: `https://wa.me/8801712345678` },
-        { label: "Customer Support", value: "+880 1613-371875", href: "tel:+8801613371875" },
-      ],
-    },
-    {
-      icon: Mail,
-      title: "Email Addresses",
-      details: [
-        { label: "General Inquiry", value: "hello@projectkaru.com", href: "mailto:hello@projectkaru.com" },
-        { label: "Support", value: "support@projectkaru.com", href: "mailto:support@projectkaru.com" },
-        { label: "Custom Orders", value: "custom@projectkaru.com", href: "mailto:custom@projectkaru.com" },
-      ],
-    },
-    {
-      icon: MapPin,
-      title: "Location",
-      details: [
-        { label: "Address", value: "Khulna, Bangladesh", href: null },
-        { label: "Business Hours", value: "Mon-Sat: 9AM-6PM", href: null },
-      ],
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -108,47 +74,11 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Contact Information Cards */}
+      {/* Contact Section */}
       <section className="py-16">
         <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {contactInfo.map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-              >
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                  <item.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-secondary mb-4">{item.title}</h3>
-                <div className="space-y-3">
-                  {item.details.map((detail, idx) => (
-                    <div key={idx}>
-                      <p className="text-sm font-medium text-gray-500 mb-1">{detail.label}</p>
-                      {detail.href ? (
-                        <a
-                          href={detail.href}
-                          className="text-secondary hover:text-primary transition-colors font-medium"
-                          target={detail.href.startsWith('http') ? '_blank' : undefined}
-                          rel={detail.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                        >
-                          {detail.value}
-                        </a>
-                      ) : (
-                        <p className="text-secondary font-medium">{detail.value}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Contact Form and Additional Info */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
             {/* Contact Form */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -253,157 +183,85 @@ export default function ContactPage() {
               </form>
             </motion.div>
 
-            {/* Additional Information */}
+            {/* Contact Options */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="space-y-8"
+              className="space-y-6"
             >
-              {/* Business Hours */}
+              {/* Contact Options */}
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-secondary">Business Hours</h3>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Monday - Friday</span>
-                    <span className="font-medium">9:00 AM - 6:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Saturday</span>
-                    <span className="font-medium">9:00 AM - 4:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Sunday</span>
-                    <span className="font-medium text-red-600">Closed</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-4">
-                  * Response time: Within 24 hours during business days
-                </p>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-semibold text-secondary mb-6">Quick Actions</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <a
-                    href="https://wa.me/8801613371875"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <MessageCircle className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-secondary">Chat on WhatsApp</p>
-                      <p className="text-sm text-gray-600">Instant response for orders</p>
-                    </div>
-                  </a>
-
+                <h3 className="text-xl font-semibold text-secondary mb-6">Contact Options</h3>
+                <div className="space-y-4">
+                  {/* Mobile */}
                   <a
                     href="tel:+8801613371875"
                     className="flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                   >
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Phone className="w-5 h-5 text-blue-600" />
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Phone className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-secondary">Call Now</p>
+                      <p className="font-medium text-secondary">Call Us</p>
                       <p className="text-sm text-gray-600">+880 1613-371875</p>
                     </div>
                   </a>
 
+                  {/* Email */}
                   <a
                     href="mailto:hello@projectkaru.com"
                     className="flex items-center gap-4 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                   >
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-purple-600" />
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Mail className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
                       <p className="font-medium text-secondary">Email Us</p>
                       <p className="text-sm text-gray-600">hello@projectkaru.com</p>
                     </div>
                   </a>
+
+                  {/* WhatsApp */}
+                  <a
+                    href="https://wa.me/8801613371875"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                  >
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <MessageCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-secondary">WhatsApp</p>
+                      <p className="text-sm text-gray-600">Chat with us instantly</p>
+                    </div>
+                  </a>
                 </div>
               </div>
 
-              {/* Social Media */}
+              {/* Developer Info */}
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-semibold text-secondary mb-6">Follow Us</h3>
-                <p className="text-gray-600 mb-6">
-                  Stay updated with our latest products and 3D printing projects
-                </p>
-                <div className="flex gap-4">
+                <h3 className="text-xl font-semibold text-secondary mb-6">Developer</h3>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Github className="w-8 h-8 text-gray-600" />
+                  </div>
+                  <h4 className="font-semibold text-secondary mb-2">Shihab Ahemed</h4>
+                  <p className="text-sm text-gray-600 mb-4">Full Stack Developer</p>
                   <a
-                    href={SOCIAL_LINKS.facebook}
+                    href="https://github.com/shihab221"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition-colors"
-                    aria-label="Facebook"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
                   >
-                    <Facebook className="w-6 h-6" />
-                  </a>
-                  <a
-                    href={SOCIAL_LINKS.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-pink-600 hover:bg-pink-700 text-white rounded-lg flex items-center justify-center transition-colors"
-                    aria-label="Instagram"
-                  >
-                    <Instagram className="w-6 h-6" />
-                  </a>
-                  <a
-                    href={SOCIAL_LINKS.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-blue-700 hover:bg-blue-800 text-white rounded-lg flex items-center justify-center transition-colors"
-                    aria-label="LinkedIn"
-                  >
-                    <Linkedin className="w-6 h-6" />
-                  </a>
-                  <a
-                    href={SOCIAL_LINKS.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center transition-colors"
-                    aria-label="WhatsApp"
-                  >
-                    <MessageCircle className="w-6 h-6" />
+                    <Github className="w-4 h-4" />
+                    github.com/shihab221
                   </a>
                 </div>
               </div>
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* Map Section (Placeholder) */}
-      <section className="py-16 bg-white">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h2 className="text-3xl font-bold text-secondary mb-4">Visit Our Location</h2>
-            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-              Located in the heart of Khulna, Bangladesh. We're easily accessible and ready to discuss your 3D printing projects.
-            </p>
-            <div className="bg-gray-200 rounded-2xl h-64 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Interactive map coming soon</p>
-                <p className="text-sm text-gray-400 mt-2">Khulna, Bangladesh</p>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
     </div>

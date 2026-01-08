@@ -36,7 +36,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
             <Image 
-              src="/Logo Web.png"
+              src="/Logo.png"
               alt="ProjectKaru Logo"
               width={80}
               height={80}
@@ -54,7 +54,7 @@ export function Footer() {
                 className="flex items-center gap-3 text-gray-400 hover:text-primary transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                hello@projectkaru.com
+                projectkarubd@gmail.com
               </a>
               <a
                 href="tel:+8801712345678"
@@ -89,7 +89,7 @@ export function Footer() {
               >
                 <Instagram className="w-5 h-5" />
               </a>
-              <a
+              {/* <a
                 href={SOCIAL_LINKS.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -97,7 +97,7 @@ export function Footer() {
                 aria-label="LinkedIn"
               >
                 <Linkedin className="w-5 h-5" />
-              </a>
+              </a> */}
               <a
                 href={SOCIAL_LINKS.whatsapp}
                 target="_blank"
