@@ -56,6 +56,53 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check admin auth
+    const authResult = await authMiddleware(request, true);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { id } = params;
+    const body = await request.json();
+    const { isActive } = body;
+
+    if (typeof isActive !== 'boolean') {
+      return NextResponse.json(
+        { message: "isActive must be a boolean" },
+        { status: 400 }
+      );
+    }
+
+    // Update product active status
+    const product = await prisma.product.update({
+      where: { id },
+      data: { isActive },
+      select: {
+        id: true,
+        name: true,
+        isActive: true
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Product ${isActive ? 'activated' : 'deactivated'} successfully`,
+      product,
+    });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -69,10 +116,20 @@ export async function DELETE(
 
     const { id } = params;
 
-    // Check if product exists
+    // Check if product exists and get related record counts
     const product = await prisma.product.findUnique({
       where: { id },
-      select: { id: true, name: true }
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        _count: {
+          select: {
+            orderItems: true,
+            reviews: true
+          }
+        }
+      }
     });
 
     if (!product) {
@@ -82,7 +139,26 @@ export async function DELETE(
       );
     }
 
-    // Delete the product (cascade will handle related records)
+    // Check if product has order items and is active (can delete inactive products)
+    if (product._count.orderItems > 0 && product.isActive) {
+      return NextResponse.json(
+        {
+          message: "Cannot delete active product that has been ordered. Deactivate it first, then delete.",
+          orderCount: product._count.orderItems,
+          suggestion: "deactivate"
+        },
+        { status: 400 }
+      );
+    }
+
+    // Delete reviews first (cascade won't handle this automatically)
+    if (product._count.reviews > 0) {
+      await prisma.review.deleteMany({
+        where: { productId: id }
+      });
+    }
+
+    // Delete the product (cascade will handle ProductSize and ProductImage)
     await prisma.product.delete({
       where: { id }
     });

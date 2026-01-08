@@ -19,6 +19,7 @@ import {
   CheckCircle,
   X,
   Loader2,
+  Power,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
@@ -72,6 +73,7 @@ export default function AdminProducts() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingProductId, setTogglingProductId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authInitialized && (!isAuthenticated || !isAdmin)) {
@@ -127,6 +129,39 @@ export default function AdminProducts() {
       toast.error("Failed to delete product");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleToggleActive = async (product: Product) => {
+    setTogglingProductId(product.id);
+    try {
+      const res = await fetch(`/api/admin/products/${product.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isActive: !product.isActive,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(`Product ${!product.isActive ? 'activated' : 'deactivated'} successfully`);
+        setProducts(products.map(p =>
+          p.id === product.id
+            ? { ...p, isActive: !p.isActive }
+            : p
+        ));
+      } else {
+        toast.error(data.message || "Failed to update product status");
+      }
+    } catch (error) {
+      console.error("Failed to toggle product status:", error);
+      toast.error("Failed to update product status");
+    } finally {
+      setTogglingProductId(null);
     }
   };
 
@@ -407,6 +442,23 @@ export default function AdminProducts() {
                               <Eye className="w-4 h-4" />
                             </Link>
 
+                            <button
+                              onClick={() => handleToggleActive(product)}
+                              disabled={togglingProductId === product.id}
+                              className={`p-2 rounded-lg transition-colors ${
+                                product.isActive
+                                  ? "text-green-500 hover:text-green-600 hover:bg-green-50"
+                                  : "text-gray-400 hover:text-green-500 hover:bg-green-50"
+                              }`}
+                              title={product.isActive ? "Deactivate Product" : "Activate Product"}
+                            >
+                              {togglingProductId === product.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Power className="w-4 h-4" />
+                              )}
+                            </button>
+
                             <Link
                               href={`/admin/products/new?id=${product.id}`}
                               className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
@@ -464,10 +516,15 @@ export default function AdminProducts() {
               </h3>
             </div>
 
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete <strong>"{deletingProduct.name}"</strong>?
-              This action cannot be undone.
-            </p>
+            <div className="text-gray-600 mb-6">
+              <p className="mb-3">
+                Are you sure you want to delete <strong>"{deletingProduct.name}"</strong>?
+              </p>
+              <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <AlertTriangle className="w-4 h-4 inline mr-2" />
+                If this product has been ordered, consider deactivating it instead of deleting it to preserve order history.
+              </p>
+            </div>
 
             <div className="flex gap-3">
               <button
@@ -477,6 +534,18 @@ export default function AdminProducts() {
               >
                 Cancel
               </button>
+              {deletingProduct && deletingProduct.isActive && (
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    handleToggleActive(deletingProduct);
+                  }}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                  disabled={isDeleting}
+                >
+                  Deactivate Instead
+                </button>
+              )}
               <button
                 onClick={handleDeleteProduct}
                 disabled={isDeleting}
