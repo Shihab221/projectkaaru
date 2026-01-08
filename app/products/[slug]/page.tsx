@@ -148,7 +148,16 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product) {
+      toast.error("Product data not available");
+      return;
+    }
+
+    if (!product.id || !product.name || !product.slug) {
+      console.error("Invalid product data:", product);
+      toast.error("Invalid product data");
+      return;
+    }
 
     if (getCurrentStock() < 1) {
       toast.error("Product is out of stock");
@@ -173,49 +182,87 @@ export default function ProductDetailPage() {
       }
     }
 
-    dispatch(
-      addToCart({
-        _id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: currentPrice.price,
-        discountedPrice: currentPrice.discountedPrice,
-        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
-        quantity,
-        stock: getCurrentStock(),
-        size: selectedSize || undefined,
-        selectedBackgroundColor: selectedBackgroundColor || undefined,
-        selectedBorderColor: selectedBorderColor || undefined,
-      })
-    );
-    dispatch(openCart());
-    toast.success("Added to cart!");
+    try {
+      dispatch(
+        addToCart({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: currentPrice.price,
+          discountedPrice: currentPrice.discountedPrice,
+          image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
+          quantity,
+          stock: getCurrentStock(),
+          size: selectedSize || undefined,
+          selectedBackgroundColor: selectedBackgroundColor || undefined,
+          selectedBorderColor: selectedBorderColor || undefined,
+        })
+      );
+      dispatch(openCart());
+      toast.success("Added to cart!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("Failed to add to cart");
+    }
   };
 
   const handleBuyNow = () => {
-    // Clear cart first, then add this product
-    dispatch(clearCart());
+    if (!product) {
+      toast.error("Product data not available");
+      return;
+    }
 
-    // Add product to cart with all selected options
-    dispatch(
-      addToCart({
-        _id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: currentPrice.price,
-        discountedPrice: currentPrice.discountedPrice,
-        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
-        quantity,
-        stock: getCurrentStock(),
-        size: selectedSize || undefined,
-        selectedBackgroundColor: selectedBackgroundColor || undefined,
-        selectedBorderColor: selectedBorderColor || undefined,
-      })
-    );
+    if (!product.id || !product.name || !product.slug) {
+      console.error("Invalid product data:", product);
+      toast.error("Invalid product data");
+      return;
+    }
 
-    // Open cart sidebar
-    dispatch(openCart());
-    toast.success("Added to cart!");
+    // Check if size is required but not selected
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast.error("Please select a size");
+      return;
+    }
+
+    // Check if keychain colors are required but not selected
+    if (product.category?.slug === 'key-chains') {
+      if (product.backgroundColors && product.backgroundColors.length > 0 && !selectedBackgroundColor) {
+        toast.error("Please select a background color for your keychain");
+        return;
+      }
+      if (product.borderColors && product.borderColors.length > 0 && !selectedBorderColor) {
+        toast.error("Please select a border color for your keychain");
+        return;
+      }
+    }
+
+    try {
+      // Clear cart first, then add this product
+      dispatch(clearCart());
+
+      // Add product to cart with all selected options
+      dispatch(
+        addToCart({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: currentPrice.price,
+          discountedPrice: currentPrice.discountedPrice,
+          image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
+          quantity,
+          stock: getCurrentStock(),
+          size: selectedSize || undefined,
+          selectedBackgroundColor: selectedBackgroundColor || undefined,
+          selectedBorderColor: selectedBorderColor || undefined,
+        })
+      );
+
+      // Redirect to checkout instead of opening cart
+      router.push("/checkout");
+    } catch (error) {
+      console.error("Error with Buy Now:", error);
+      toast.error("Failed to process Buy Now");
+    }
   };
 
   if (isLoading || isRetrying) {

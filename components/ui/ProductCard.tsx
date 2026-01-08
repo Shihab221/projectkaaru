@@ -29,6 +29,12 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const dispatch = useAppDispatch();
 
+  // Validate product data
+  if (!product || !product.id || !product.name || !product.slug) {
+    console.error("Invalid product data:", product);
+    return null; // Don't render invalid products
+  }
+
   const isOnSale = product.discountedPrice && product.discountedPrice < product.price;
   const discount = isOnSale
     ? calculateDiscount(product.price, product.discountedPrice!)
@@ -43,20 +49,25 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    dispatch(
-      addToCart({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: product.price,
-        discountedPrice: product.discountedPrice,
-        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
-        quantity: 1,
-        stock: product.stock,
-      })
-    );
-    dispatch(openCart());
-    toast.success("Added to cart!");
+    try {
+      dispatch(
+        addToCart({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          discountedPrice: product.discountedPrice,
+          image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
+          quantity: 1,
+          stock: product.stock,
+        })
+      );
+      dispatch(openCart());
+      toast.success("Added to cart!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("Failed to add to cart");
+    }
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
@@ -68,24 +79,28 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    // Clear cart first, then add this product
-    dispatch(clearCart());
-    dispatch(
-      addToCart({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: product.price,
-        discountedPrice: product.discountedPrice,
-        image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
-        quantity: 1,
-        stock: product.stock,
-      })
-    );
+    try {
+      // Clear cart first, then add this product
+      dispatch(clearCart());
+      dispatch(
+        addToCart({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          discountedPrice: product.discountedPrice,
+          image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
+          quantity: 1,
+          stock: product.stock,
+        })
+      );
 
-    // Open cart sidebar
-    dispatch(openCart());
-    toast.success("Added to cart!");
+      // Redirect to checkout instead of opening cart
+      window.location.href = "/checkout";
+    } catch (error) {
+      console.error("Error with Buy Now:", error);
+      toast.error("Failed to process Buy Now");
+    }
   };
 
   return (
