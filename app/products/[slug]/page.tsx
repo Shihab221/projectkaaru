@@ -257,8 +257,10 @@ export default function ProductDetailPage() {
         })
       );
 
-      // Redirect to checkout instead of opening cart
-      router.push("/checkout");
+      // Small delay to ensure cart operation completes before redirect
+      setTimeout(() => {
+        router.push("/checkout");
+      }, 100);
     } catch (error) {
       console.error("Error with Buy Now:", error);
       toast.error("Failed to process Buy Now");

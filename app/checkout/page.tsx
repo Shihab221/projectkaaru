@@ -124,7 +124,14 @@ export default function CheckoutPage() {
   // Redirect if cart is empty
   useEffect(() => {
     if (cartItems.length === 0 && !orderPlaced) {
-      router.replace("/products");
+      // Small delay to allow for cart operations from "Buy Now" redirects
+      const timer = setTimeout(() => {
+        if (cartItems.length === 0 && !orderPlaced) {
+          router.replace("/products");
+        }
+      }, 2000); // 2 second delay to allow for Buy Now operations
+
+      return () => clearTimeout(timer);
     }
   }, [cartItems, orderPlaced, router]);
 

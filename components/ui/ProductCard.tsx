@@ -95,8 +95,10 @@ export function ProductCard({ product }: ProductCardProps) {
         })
       );
 
-      // Redirect to checkout instead of opening cart
-      window.location.href = "/checkout";
+      // Small delay to ensure cart operation completes before redirect
+      setTimeout(() => {
+        window.location.href = "/checkout";
+      }, 100);
     } catch (error) {
       console.error("Error with Buy Now:", error);
       toast.error("Failed to process Buy Now");
