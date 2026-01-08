@@ -1,6 +1,9 @@
 /**
- * Meta Pixel (Facebook Pixel) Event Tracking Utility
- * 
+ * Meta Pixel (Facebook Conversions API) Server-Side Event Tracking Utility
+ *
+ * This handles server-side event tracking using Meta's Conversions API
+ * instead of client-side browser tracking.
+ *
  * Use these functions to track standard e-commerce events:
  * - trackPageView() - Automatically tracked on page load
  * - trackPurchase() - When order is completed
@@ -11,44 +14,42 @@
  * - trackContact() - When user submits contact form
  */
 
-declare global {
-  interface Window {
-    fbq: (...args: any[]) => void;
-  }
-}
-
 /**
- * Check if Meta Pixel is loaded
+ * Send event to server-side tracking API
  */
-function isMetaPixelLoaded(): boolean {
-  return typeof window !== "undefined" && typeof window.fbq === "function";
-}
-
-/**
- * Track a custom event with Meta Pixel
- */
-export function trackEvent(eventName: string, eventData?: Record<string, any>) {
-  if (!isMetaPixelLoaded()) {
-    console.warn("Meta Pixel not loaded yet. Event not tracked:", eventName);
-    return;
-  }
-
+async function sendEventToServer(eventName: string, eventData?: Record<string, any>): Promise<boolean> {
   try {
-    if (eventData) {
-      window.fbq("track", eventName, eventData);
-    } else {
-      window.fbq("track", eventName);
+    const response = await fetch('/api/analytics/track', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        event: eventName,
+        data: eventData || {},
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(`Failed to track ${eventName} event:`, errorData.error);
+      return false;
     }
+
+    const result = await response.json();
+    console.log(`${eventName} event tracked successfully:`, result.message);
+    return true;
   } catch (error) {
-    console.error("Error tracking Meta Pixel event:", error);
+    console.error(`Error sending ${eventName} event to server:`, error);
+    return false;
   }
 }
 
 /**
  * Track PageView (automatically tracked, but can be called manually)
  */
-export function trackPageView() {
-  trackEvent("PageView");
+export async function trackPageView(): Promise<boolean> {
+  return await sendEventToServer("PageView");
 }
 
 /**
@@ -57,7 +58,7 @@ export function trackPageView() {
  * @param currency - Currency code (default: BDT)
  * @param contents - Array of purchased items
  */
-export function trackPurchase(
+export async function trackPurchase(
   value: number,
   currency: string = "BDT",
   contents?: Array<{
@@ -67,7 +68,7 @@ export function trackPurchase(
     quantity: number;
     item_price: number;
   }>
-) {
+): Promise<boolean> {
   const eventData: Record<string, any> = {
     value,
     currency,
@@ -80,7 +81,7 @@ export function trackPurchase(
     eventData.num_items = contents.reduce((sum, item) => sum + item.quantity, 0);
   }
 
-  trackEvent("Purchase", eventData);
+  return await sendEventToServer("Purchase", eventData);
 }
 
 /**
@@ -92,14 +93,14 @@ export function trackPurchase(
  * @param contentCategory - Product category
  * @param quantity - Quantity added
  */
-export function trackAddToCart(
+export async function trackAddToCart(
   value: number,
   currency: string = "BDT",
   contentId?: string,
   contentName?: string,
   contentCategory?: string,
   quantity: number = 1
-) {
+): Promise<boolean> {
   const eventData: Record<string, any> = {
     value,
     currency,
@@ -111,7 +112,7 @@ export function trackAddToCart(
   if (contentName) eventData.content_name = contentName;
   if (contentCategory) eventData.content_category = contentCategory;
 
-  trackEvent("AddToCart", eventData);
+  return await sendEventToServer("AddToCart", eventData);
 }
 
 /**
@@ -120,7 +121,7 @@ export function trackAddToCart(
  * @param currency - Currency code (default: BDT)
  * @param contents - Array of items in cart
  */
-export function trackInitiateCheckout(
+export async function trackInitiateCheckout(
   value: number,
   currency: string = "BDT",
   contents?: Array<{
@@ -130,7 +131,7 @@ export function trackInitiateCheckout(
     quantity: number;
     item_price: number;
   }>
-) {
+): Promise<boolean> {
   const eventData: Record<string, any> = {
     value,
     currency,
@@ -143,7 +144,7 @@ export function trackInitiateCheckout(
     eventData.num_items = contents.reduce((sum, item) => sum + item.quantity, 0);
   }
 
-  trackEvent("InitiateCheckout", eventData);
+  return await sendEventToServer("InitiateCheckout", eventData);
 }
 
 /**
@@ -154,13 +155,13 @@ export function trackInitiateCheckout(
  * @param value - Product price
  * @param currency - Currency code (default: BDT)
  */
-export function trackViewContent(
+export async function trackViewContent(
   contentId?: string,
   contentName?: string,
   contentCategory?: string,
   value?: number,
   currency: string = "BDT"
-) {
+): Promise<boolean> {
   const eventData: Record<string, any> = {
     content_type: "product",
     currency,
@@ -171,7 +172,7 @@ export function trackViewContent(
   if (contentCategory) eventData.content_category = contentCategory;
   if (value !== undefined) eventData.value = value;
 
-  trackEvent("ViewContent", eventData);
+  return await sendEventToServer("ViewContent", eventData);
 }
 
 /**
@@ -179,7 +180,7 @@ export function trackViewContent(
  * @param searchString - Search query
  * @param contentIds - Array of product IDs in results (optional)
  */
-export function trackSearch(searchString: string, contentIds?: string[]) {
+export async function trackSearch(searchString: string, contentIds?: string[]): Promise<boolean> {
   const eventData: Record<string, any> = {
     search_string: searchString,
     content_type: "product",
@@ -189,26 +190,26 @@ export function trackSearch(searchString: string, contentIds?: string[]) {
     eventData.content_ids = contentIds;
   }
 
-  trackEvent("Search", eventData);
+  return await sendEventToServer("Search", eventData);
 }
 
 /**
  * Track Contact event - Call when user submits contact form
  */
-export function trackContact() {
-  trackEvent("Contact");
+export async function trackContact(): Promise<boolean> {
+  return await sendEventToServer("Contact");
 }
 
 /**
  * Track Lead event - Call when user signs up or shows interest
  */
-export function trackLead() {
-  trackEvent("Lead");
+export async function trackLead(): Promise<boolean> {
+  return await sendEventToServer("Lead");
 }
 
 /**
  * Track CompleteRegistration event - Call when user completes signup
  */
-export function trackCompleteRegistration() {
-  trackEvent("CompleteRegistration");
+export async function trackCompleteRegistration(): Promise<boolean> {
+  return await sendEventToServer("CompleteRegistration");
 }

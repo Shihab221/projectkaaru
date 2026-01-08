@@ -1,100 +1,111 @@
-# Meta Pixel Implementation Guide
+# Meta Pixel Server-Side Tracking Implementation Guide
 
-## ✅ Implementation Complete
+## ✅ Hybrid Implementation Complete
 
-Meta Pixel has been successfully implemented in your website with the following Pixel ID: **2398720360548171**
+Meta Pixel has been successfully implemented with **hybrid tracking** combining client-side pixel for browser detection with server-side Conversions API for reliable event tracking.
 
-## 📋 Environment Variable
+### Current Configuration:
+- **Meta Pixel ID**: `862848263044423`
+- **Client-Side**: Pixel loaded for Pixel Helper detection
+- **Server-Side**: Conversions API for actual event tracking
+- **Access Token**: Configured for authenticated API calls
 
-Add this to your `.env.local` file (or `.env` for production):
+## 📋 Environment Variables
+
+Add these to your `.env.local` file (or `.env` for production):
 
 ```env
-NEXT_PUBLIC_META_PIXEL_ID=2398720360548171
+# Meta Pixel Configuration
+NEXT_PUBLIC_META_PIXEL_ID=862848263044423
+META_ACCESS_TOKEN=EAAcJ7YzhDVIBQTmmWtrDGe0GAiMmu3UEeI8vjmu8d8TZB4AhGRH2luOYgnl8QFtLZAIqjgHpQWWAnHTB8PZCh2NfZA0HtcoMk6K2ZCgy2OxLUKKZAToZAcZBpE8mfxymxX4q38H3hYLxaFZBinHPDQeGquAwhzAvsS1LhKpdMBHSXj1G1aA0Xm1e3VBjCWSKZB0QZDZD
+
+# Database Configuration
+DATABASE_URL="your-database-url-here"
+DIRECT_URL="your-direct-url-here"
+
+# JWT Secret
+JWT_SECRET="your-jwt-secret-here"
 ```
 
-**Important**: The `NEXT_PUBLIC_` prefix is required for Next.js to make this variable available in the browser.
+**Important**: The `NEXT_PUBLIC_` prefix is only needed for the Pixel ID. The Access Token should remain server-side only.
 
 ## 🎯 Tracked Events
 
-The following e-commerce events are automatically tracked:
+The following e-commerce events are automatically tracked using **server-side Conversions API**:
 
 1. **PageView** - Automatically tracked on every page load
 2. **ViewContent** - When a product page is viewed
 3. **AddToCart** - When an item is added to cart
 4. **InitiateCheckout** - When user reaches checkout page
 5. **Purchase** - When an order is successfully completed
+6. **Search** - When user performs a search
+7. **Contact** - When user submits contact form
+8. **Lead** - When user shows interest
+9. **CompleteRegistration** - When user completes signup
 
-## 🔍 How to Verify Meta Pixel is Working
+## 🔄 Server-Side vs Client-Side Tracking
 
-### Method 1: Facebook Pixel Helper (Chrome Extension) - **RECOMMENDED**
+### Benefits of Server-Side Tracking:
+- **More Reliable**: Events are sent directly from your server, not dependent on client-side JavaScript
+- **Better Privacy**: No browser fingerprinting or third-party cookies required
+- **GDPR Compliant**: Better compliance with privacy regulations
+- **Ad Blocker Resistant**: Server-side tracking bypasses most ad blockers
+- **Enhanced Data**: Includes server-side user data (IP, User-Agent, etc.)
 
-1. **Install the Extension**:
-   - Go to Chrome Web Store
-   - Search for "Facebook Pixel Helper"
-   - Install the extension by Facebook
+### How It Works:
+1. Client-side events trigger API calls to `/api/analytics/track`
+2. Server sends events to Meta's Conversions API with user data
+3. Events are processed server-side with proper authentication
 
-2. **Verify on Your Website**:
-   - Open your website (localhost:3000 or production URL)
-   - Click the Facebook Pixel Helper icon in your browser toolbar
-   - You should see:
-     - ✅ Pixel ID: 2398720360548171
-     - ✅ Events being tracked (PageView, ViewContent, etc.)
+## 🔍 How to Verify Server-Side Meta Pixel is Working
 
-3. **Test Events**:
-   - **PageView**: Should fire automatically when page loads
-   - **ViewContent**: Navigate to a product page (`/products/[slug]`)
-   - **AddToCart**: Add a product to cart
-   - **InitiateCheckout**: Go to checkout page
-   - **Purchase**: Complete an order
-
-### Method 2: Facebook Events Manager
+### Method 1: Facebook Events Manager (Primary Verification)
 
 1. **Access Events Manager**:
    - Go to [Facebook Events Manager](https://business.facebook.com/events_manager2)
-   - Select your Pixel (ID: 2398720360548171)
+   - Select your Pixel (ID: 862848263044423)
 
 2. **Check Real-Time Activity**:
    - Click on "Test Events" or "Live Activity"
    - Browse your website
-   - You should see events appearing in real-time
+   - You should see events appearing in real-time from server-side tracking
 
 3. **Verify Event Details**:
    - Click on any event to see details
    - Check that:
      - Event name is correct (PageView, Purchase, etc.)
      - Parameters are being sent (value, currency, content_ids, etc.)
+     - **Action Source** shows "website" (server-side events)
 
-### Method 3: Browser Console (Developer Tools)
+### Method 2: Server Logs and Network Tab
 
-1. **Open Developer Tools**:
-   - Press `F12` or right-click → Inspect
-   - Go to the "Console" tab
+1. **Check Browser Network Tab**:
+   - Press `F12` → Network tab
+   - Filter by "analytics/track"
+   - You should see POST requests to `/api/analytics/track` for each event
 
-2. **Check for Pixel Code**:
-   - Type: `window.fbq`
-   - Press Enter
-   - You should see a function (not undefined)
+2. **Check Server Console Logs**:
+   - Events are logged in your server console
+   - Look for messages like: "Purchase event tracked successfully"
 
-3. **Manually Trigger Events** (for testing):
-   ```javascript
-   // Check if pixel is loaded
-   typeof window.fbq === "function" // Should return true
-   
-   // Manually track a test event
-   window.fbq('track', 'PageView');
+3. **Test API Endpoint Directly**:
+   ```bash
+   curl -X POST http://localhost:3002/api/analytics/track \
+     -H "Content-Type: application/json" \
+     -d '{"event":"PageView","data":{}}'
    ```
 
-### Method 4: Network Tab (Advanced)
+### Method 3: Test Events (Development Mode)
 
-1. **Open Developer Tools**:
-   - Press `F12`
-   - Go to "Network" tab
-   - Filter by "tr" (Meta Pixel requests)
+When `NODE_ENV=development`, events include a `test_event_code` for testing:
 
-2. **Look for Requests**:
-   - You should see requests to `facebook.com/tr`
-   - Click on any request
-   - Check the payload to see event data
+1. **In Events Manager**:
+   - Go to Test Events section
+   - Look for events with test code "TEST12345"
+
+2. **Verify Test Events**:
+   - Test events appear in Events Manager but don't affect actual campaigns
+   - Remove test code for production deployment
 
 ## 🧪 Testing Checklist
 
@@ -106,89 +117,143 @@ Use this checklist to verify all events are working:
 - [ ] **InitiateCheckout** - Go to checkout → Check Pixel Helper shows "InitiateCheckout" event
 - [ ] **Purchase** - Complete an order → Check Pixel Helper shows "Purchase" event with order value
 
-## 📊 Event Data Structure
+## 📊 Server-Side Event Data Structure
 
-### Purchase Event Example:
+Events are sent to Meta's Conversions API with enhanced server-side data:
+
+### Purchase Event (Server-Side Format):
 ```javascript
+{
+  event_name: 'Purchase',
+  event_time: 1703123456,
+  event_source_url: 'https://yourwebsite.com/checkout',
+  action_source: 'website',
+  user_data: {
+    client_ip_address: '192.168.1.1',
+    client_user_agent: 'Mozilla/5.0...',
+    fbc: 'fb.1.1703123456...',
+    fbp: 'fb.1.1703123456...'
+  },
+  custom_data: {
+    value: 1250.00,
+    currency: 'BDT',
+    contents: [
+      {
+        id: 'product-id-1',
+        name: 'Product Name',
+        category: 'Category Name',
+        quantity: 2,
+        item_price: 500.00
+      }
+    ],
+    content_ids: ['product-id-1', 'product-id-2'],
+    content_type: 'product',
+    num_items: 3
+  }
+}
+```
+
+### Client-Side API Call (What your app sends):
+```javascript
+// POST /api/analytics/track
 {
   event: 'Purchase',
-  value: 1250.00,
-  currency: 'BDT',
-  content_ids: ['product-id-1', 'product-id-2'],
-  contents: [
-    {
-      id: 'product-id-1',
-      name: 'Product Name',
-      category: 'Category Name',
-      quantity: 2,
-      item_price: 500.00
-    }
-  ],
-  num_items: 3
+  data: {
+    value: 1250.00,
+    currency: 'BDT',
+    contents: [...],
+    content_ids: ['product-id-1', 'product-id-2'],
+    num_items: 3
+  }
 }
 ```
 
-### AddToCart Event Example:
-```javascript
-{
-  event: 'AddToCart',
-  value: 500.00,
-  currency: 'BDT',
-  content_ids: ['product-id'],
-  content_name: 'Product Name',
-  content_category: 'Category Name',
-  quantity: 1
-}
-```
+### Server-Side Advantages:
+- **IP Address**: User's IP for better geo-targeting
+- **User Agent**: Device and browser information
+- **Click IDs**: fbc/fbp parameters when available
+- **Event Source URL**: Exact page where event occurred
+- **Server Timestamp**: Accurate event timing
 
 ## 🚨 Troubleshooting
 
-### Pixel Not Loading?
+### Server-Side Tracking Not Working?
 
-1. **Check Environment Variable**:
-   - Ensure `NEXT_PUBLIC_META_PIXEL_ID` is set in `.env.local`
-   - Restart your development server after adding the variable
+1. **Check Environment Variables**:
+   - Ensure both `NEXT_PUBLIC_META_PIXEL_ID` and `META_ACCESS_TOKEN` are set
+   - Restart your development server after adding variables
 
-2. **Check Browser Console**:
-   - Look for any JavaScript errors
-   - Ensure no ad blockers are interfering
+2. **Check API Endpoint**:
+   - Visit `http://localhost:3002/api/analytics/track` directly
+   - Should return a 405 Method Not Allowed (only accepts POST)
 
-3. **Verify Pixel ID**:
-   - Confirm the Pixel ID is correct: `2398720360548171`
-   - Check in Facebook Events Manager that the Pixel exists
+3. **Verify Access Token**:
+   - Ensure the Access Token is valid and has the right permissions
+   - Check Facebook Events Manager for any authentication errors
 
-### Events Not Firing?
+4. **Check Server Logs**:
+   - Look for API errors in your server console
+   - Meta API responses are logged for debugging
 
-1. **Check Network Tab**:
-   - Ensure requests are being sent to `facebook.com/tr`
-   - Check for any blocked requests
+### Events Not Appearing in Events Manager?
 
-2. **Verify Event Triggers**:
-   - Ensure you're performing the actions that trigger events
-   - Check the code to see where events are called
+1. **Check Network Requests**:
+   - Ensure `/api/analytics/track` requests are successful (200 status)
+   - Check browser Network tab for failed requests
 
-3. **Check Facebook Pixel Helper**:
-   - It will show errors if events aren't firing correctly
-   - Check for any warnings or errors
+2. **Verify Event Data**:
+   - Events require proper data structure
+   - Check server logs for "event tracked successfully" messages
 
-### Localhost vs Production
+3. **Test vs Live Events**:
+   - Development: Events include test code, appear in Test Events
+   - Production: Events appear in Live Activity immediately
 
-- **Localhost**: Pixel will work, but events might not appear in Events Manager immediately
-- **Production**: All events will be properly tracked and visible in Events Manager
+### Access Token Issues?
+
+1. **Generate New Token**:
+   - Go to [Facebook Developers](https://developers.facebook.com/)
+   - Your App → Marketing API → Tools
+   - Generate new access token with `ads_management` permission
+
+2. **Token Permissions**:
+   - Ensure token has Conversions API access
+   - Check token expiration (some tokens expire)
 
 ## 📝 Additional Notes
 
-- The Pixel code is loaded in the root layout, so it's active on all pages
-- Events are tracked using the utility functions in `lib/analytics.ts`
-- All tracking is client-side only (browser-based)
-- No sensitive user data is sent to Meta Pixel (only e-commerce events)
+- **Server-side tracking** is more reliable than client-side
+- Events are sent from `/api/analytics/track` endpoint
+- All tracking uses Meta's Conversions API v18.0
+- User data includes IP, User-Agent, and click IDs when available
+- Development mode includes test event codes
+- No browser fingerprinting or third-party cookies used
 
 ## 🔗 Resources
 
-- [Facebook Pixel Helper](https://chrome.google.com/webstore/detail/facebook-pixel-helper/fdgfkebogiimcoedlicjlajpkdmockpc)
 - [Facebook Events Manager](https://business.facebook.com/events_manager2)
+- [Meta Conversions API Documentation](https://developers.facebook.com/docs/marketing-api/conversions-api)
 - [Meta Pixel Documentation](https://developers.facebook.com/docs/meta-pixel)
+- [Server-Side Tracking Guide](https://developers.facebook.com/docs/marketing-api/conversions-api/server-side-tracking)
+
+## 🛠️ API Endpoints
+
+- **POST** `/api/analytics/track` - Send events to server-side tracking
+- **Request Body**: `{ "event": "EventName", "data": {...} }`
+- **Response**: `{ "success": true, "message": "Event tracked successfully" }`
+
+## 📋 Development vs Production
+
+### Development Mode:
+- Includes `test_event_code: "TEST12345"` in all events
+- Events appear in "Test Events" section of Events Manager
+- Safe for testing without affecting live campaigns
+
+### Production Mode:
+- No test codes (remove for live deployment)
+- Events appear in real-time Live Activity
+- Affects actual ad campaigns and analytics
 
 ---
 
-**Need Help?** Check Facebook Pixel Helper for real-time event tracking and debugging information.
+**Server-Side Tracking Active**: Events are now sent directly from your server using Meta's Conversions API for maximum reliability and privacy compliance.

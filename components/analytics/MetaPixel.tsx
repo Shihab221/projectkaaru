@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import Script from "next/script";
+import { trackPageView } from "@/lib/analytics";
 
 declare global {
   interface Window {
     fbq: (...args: any[]) => void;
-    _fbq: (...args: any[]) => void;
+    _fbq: any[];
   }
 }
 
@@ -16,13 +17,10 @@ interface MetaPixelProps {
 
 export function MetaPixel({ pixelId }: MetaPixelProps) {
   useEffect(() => {
-    // Initialize fbq function if it doesn't exist
-    if (typeof window !== "undefined" && !window.fbq) {
-      window.fbq = function (...args: any[]) {
-        (window._fbq = window._fbq || []).push(args);
-      };
-      window._fbq = window._fbq || [];
-    }
+    // Always track PageView using server-side tracking
+    trackPageView().catch((error) => {
+      console.error("Failed to track PageView:", error);
+    });
   }, []);
 
   if (!pixelId) {
@@ -31,8 +29,9 @@ export function MetaPixel({ pixelId }: MetaPixelProps) {
 
   return (
     <>
+      {/* Client-side pixel for Pixel Helper detection in all environments */}
       <Script
-        id="meta-pixel-init"
+        id="facebook-pixel"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
@@ -46,6 +45,7 @@ export function MetaPixel({ pixelId }: MetaPixelProps) {
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '${pixelId}');
             fbq('track', 'PageView');
+            console.log('Meta Pixel loaded with ID: ${pixelId}');
           `,
         }}
       />
