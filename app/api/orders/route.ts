@@ -47,9 +47,9 @@ export async function POST(request: NextRequest) {
       const productIds = items
         .map(item => item.product)
         .filter((id): id is string => id !== undefined && id !== null && id !== '');
-      
+
       if (productIds.length === 0) {
-        throw new Error("No valid product IDs found in order items");
+        throw new Error("No valid product IDs found in order items. Please clear your cart and try again.");
       }
 
       const products = await tx.product.findMany({

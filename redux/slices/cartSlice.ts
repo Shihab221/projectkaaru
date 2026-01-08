@@ -27,8 +27,26 @@ const loadCartFromStorage = (): CartItem[] => {
   if (typeof window === "undefined") return [];
   try {
     const cart = localStorage.getItem("cart");
-    return cart ? JSON.parse(cart) : [];
-  } catch {
+    const items = cart ? JSON.parse(cart) : [];
+
+    // Validate and clean cart items
+    const validItems = items.filter((item: any) => {
+      if (!item.id || typeof item.id !== 'string' || item.id.trim() === '') {
+        console.warn("Removing invalid cart item:", item);
+        return false;
+      }
+      return true;
+    });
+
+    // If we removed items, save the cleaned cart back
+    if (validItems.length !== items.length) {
+      console.log(`Cleaned ${items.length - validItems.length} invalid cart items`);
+      saveCartToStorage(validItems);
+    }
+
+    return validItems;
+  } catch (error) {
+    console.error("Error loading cart from storage:", error);
     return [];
   }
 };
@@ -52,11 +70,17 @@ const cartSlice = createSlice({
   reducers: {
     // Initialize cart from localStorage
     initializeCart: (state) => {
-      state.items = loadCartFromStorage();
+      const items = loadCartFromStorage();
+      state.items = items;
     },
 
     // Add item to cart
     addToCart: (state, action: PayloadAction<CartItem>) => {
+      if (!action.payload.id || typeof action.payload.id !== 'string' || action.payload.id.trim() === '') {
+        console.error("Cannot add item to cart: invalid ID", action.payload);
+        return;
+      }
+
       const existingIndex = state.items.findIndex(
         (item) =>
           item.id === action.payload.id &&
@@ -66,7 +90,7 @@ const cartSlice = createSlice({
       );
 
       const item = action.payload;
-      const finalQuantity = existingIndex >= 0 
+      const finalQuantity = existingIndex >= 0
         ? Math.min(state.items[existingIndex].quantity + item.quantity, item.stock)
         : item.quantity;
 

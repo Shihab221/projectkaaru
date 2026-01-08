@@ -99,6 +99,21 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
 
+  // Validate cart items before allowing order
+  const validateCartItems = () => {
+    const invalidItems = cartItems.filter(item =>
+      !item.id || typeof item.id !== 'string' || item.id.trim() === ''
+    );
+
+    if (invalidItems.length > 0) {
+      console.error("Invalid cart items found:", invalidItems);
+      toast.error("Some items in your cart are invalid. Please clear your cart and try again.");
+      return false;
+    }
+
+    return true;
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     if (authInitialized && !isAuthenticated) {
@@ -179,6 +194,22 @@ export default function CheckoutPage() {
 
     if (cartItems.length === 0) {
       toast.error("Your cart is empty");
+      return;
+    }
+
+    // Validate cart items
+    const invalidItems = cartItems.filter(item =>
+      !item.id || typeof item.id !== 'string' || item.id.trim() === ''
+    );
+
+    if (invalidItems.length > 0) {
+      console.error("Invalid cart items found:", invalidItems);
+      toast.error("Some items in your cart are invalid. Please clear your cart and try again.");
+      return;
+    }
+
+    // Validate cart items
+    if (!validateCartItems()) {
       return;
     }
 

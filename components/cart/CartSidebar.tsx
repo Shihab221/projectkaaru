@@ -58,6 +58,27 @@ export function CartSidebar() {
               </button>
             </div>
 
+            {/* Invalid Items Warning */}
+            {invalidItems.length > 0 && (
+              <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-red-700">
+                    {invalidItems.length} invalid item{invalidItems.length > 1 ? 's' : ''} in cart
+                  </p>
+                  <button
+                    onClick={() => {
+                      dispatch(clearCart());
+                      toast.success("Cart cleared");
+                      closeCart();
+                    }}
+                    className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Clear Cart
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-4">
               {items.length === 0 ? (
