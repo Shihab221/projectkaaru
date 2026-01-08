@@ -12,15 +12,22 @@ import {
   closeCart,
   removeFromCart,
   updateQuantity,
+  clearCart,
 } from "@/redux/slices/cartSlice";
 import { formatPrice } from "@/lib/utils";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
+import toast from "react-hot-toast";
 
 export function CartSidebar() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectIsCartOpen);
   const items = useAppSelector(selectCartItems);
   const total = useAppSelector(selectCartTotal);
+
+  // Check for invalid items
+  const invalidItems = items.filter(item =>
+    !item.id || typeof item.id !== 'string' || item.id.trim() === ''
+  );
 
   return (
     <AnimatePresence>
@@ -69,7 +76,7 @@ export function CartSidebar() {
                     onClick={() => {
                       dispatch(clearCart());
                       toast.success("Cart cleared");
-                      closeCart();
+                      dispatch(closeCart());
                     }}
                     className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                   >
