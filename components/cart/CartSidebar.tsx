@@ -76,7 +76,7 @@ export function CartSidebar() {
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div
-                      key={`${item._id}-${item.size}-${item.selectedBackgroundColor}-${item.selectedBorderColor}`}
+                      key={`${item.id}-${item.size}-${item.selectedBackgroundColor}-${item.selectedBorderColor}`}
                       className="flex gap-4 p-3 bg-gray-50 rounded-lg"
                     >
                       {/* Product Image */}
@@ -141,7 +141,7 @@ export function CartSidebar() {
                               onClick={() =>
                                 dispatch(
                                   updateQuantity({
-                                    _id: item._id,
+                                    id: item.id,
                                     size: item.size,
                                     selectedBackgroundColor: item.selectedBackgroundColor,
                                     selectedBorderColor: item.selectedBorderColor,
@@ -161,7 +161,7 @@ export function CartSidebar() {
                               onClick={() =>
                                 dispatch(
                                   updateQuantity({
-                                    _id: item._id,
+                                    id: item.id,
                                     size: item.size,
                                     selectedBackgroundColor: item.selectedBackgroundColor,
                                     selectedBorderColor: item.selectedBorderColor,
@@ -180,7 +180,7 @@ export function CartSidebar() {
                             onClick={() =>
                               dispatch(
                                 removeFromCart({
-                                  _id: item._id,
+                                  id: item.id,
                                   size: item.size,
                                   selectedBackgroundColor: item.selectedBackgroundColor,
                                   selectedBorderColor: item.selectedBorderColor,

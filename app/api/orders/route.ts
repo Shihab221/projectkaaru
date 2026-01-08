@@ -43,7 +43,15 @@ export async function POST(request: NextRequest) {
     // Use Prisma transaction to ensure data consistency with increased timeout
     const result = await prisma.$transaction(async (tx) => {
       // First, validate stock for all items in one query
-      const productIds = items.map(item => item.product);
+      // Filter out undefined/null values to prevent Prisma errors
+      const productIds = items
+        .map(item => item.product)
+        .filter((id): id is string => id !== undefined && id !== null && id !== '');
+      
+      if (productIds.length === 0) {
+        throw new Error("No valid product IDs found in order items");
+      }
+
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
         include: { sizes: true }
@@ -54,6 +62,11 @@ export async function POST(request: NextRequest) {
 
       // Validate stock for each item
       for (const item of items) {
+        // Skip items with invalid product IDs
+        if (!item.product) {
+          throw new Error(`Invalid product ID in order item: ${item.name || 'Unknown item'}`);
+        }
+
         const product = productMap.get(item.product);
         if (!product) {
           throw new Error(`Product ${item.product} not found`);

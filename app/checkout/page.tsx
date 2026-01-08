@@ -199,7 +199,7 @@ export default function CheckoutPage() {
     try {
       const orderData = {
         items: cartItems.map((item) => ({
-          product: item._id,
+          product: item.id, // Use item.id instead of item._id
           name: item.name,
           image: item.image,
           price: item.discountedPrice || item.price,
@@ -242,7 +242,7 @@ export default function CheckoutPage() {
 
       // Track Purchase event
       const contents = cartItems.map((item) => ({
-        id: item._id || item.id,
+        id: item.id,
         name: item.name,
         category: item.category || undefined,
         quantity: item.quantity,
@@ -569,7 +569,7 @@ export default function CheckoutPage() {
               {/* Items */}
               <div className="space-y-3 mb-4">
                 {cartItems.map((item) => (
-                  <div key={`${item._id}-${item.color}-${item.font}`} className="flex gap-3">
+                  <div key={`${item.id}-${item.color}-${item.font}`} className="flex gap-3">
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       {item.image ? (
                         <img
