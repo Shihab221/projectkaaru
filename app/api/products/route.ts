@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { PRODUCTS_PER_PAGE } from "@/lib/constants";
 
+// Add cache headers for better performance
+const CACHE_DURATION = 300; // 5 minutes
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -104,32 +107,73 @@ export async function GET(request: NextRequest) {
         orderBy = { createdAt: "desc" };
     }
 
-    // Execute query
+    // Execute optimized query with parallel operations for better performance
     const skip = (page - 1) * limit;
-    const total = await prisma.product.count({ where });
-    const products = await prisma.product.findMany({
-      where,
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true }
-        },
-        sizes: true,
-        images: true,
-        _count: {
-          select: { reviews: true }
-        }
-      },
-      orderBy,
-      skip,
-      take: limit,
-    });
 
-    return NextResponse.json({
+    // Run count and products query in parallel
+    const [total, products] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          shortDescription: true,
+          price: true,
+          discountedPrice: true,
+          stock: true,
+          isTopProduct: true,
+          isActive: true,
+          averageRating: true,
+          numReviews: true,
+          sold: true,
+          createdAt: true,
+          updatedAt: true,
+          // Optimized relations - only fetch what's needed
+          category: {
+            select: { id: true, name: true, slug: true }
+          },
+          // Fetch only first image for performance
+          images: {
+            take: 1,
+            select: {
+              id: true,
+              filename: true
+            }
+          },
+          // Fetch sizes only if needed for filtering
+          sizes: searchParams.get("includeSizes") === "true" ? {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              discountedPrice: true,
+              stock: true
+            }
+          } : false,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      })
+    ]);
+
+    const response = NextResponse.json({
       products,
       page,
       totalPages: Math.ceil(total / limit),
       total,
     });
+
+    // Add caching headers for better performance
+    // Cache for 5 minutes, but allow revalidation
+    response.headers.set('Cache-Control', `public, s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
+    response.headers.set('CDN-Cache-Control', `max-age=${CACHE_DURATION}`);
+    response.headers.set('Vercel-CDN-Cache-Control', `max-age=${CACHE_DURATION}`);
+
+    return response;
   } catch (error: any) {
     console.error("Fetch products error:", error);
     return NextResponse.json(

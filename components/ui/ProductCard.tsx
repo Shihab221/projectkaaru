@@ -111,13 +111,16 @@ export function ProductCard({ product }: ProductCardProps) {
       className="product-card card-hover group"
     >
       <Link href={`/products/${product.slug}`}>
-        {/* Image Container */}
+        {/* Image Container with Lazy Loading */}
         <div className="relative aspect-square overflow-hidden bg-gray-100">
           {product.images && product.images.length > 0 && product.id ? (
             <Image
               src={`/api/images/${product.id}/0`}
               alt={product.name}
               fill
+              loading="lazy" // Enable native lazy loading
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
