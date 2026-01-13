@@ -2,6 +2,7 @@ import { Hero } from "@/components/home/Hero";
 import { TopProducts } from "@/components/home/TopProducts";
 import { Categories } from "@/components/home/Categories";
 import { Features } from "@/components/home/Features";
+import { Reviews } from "@/components/home/Reviews";
 
 export default function HomePage() {
   return (
@@ -9,6 +10,7 @@ export default function HomePage() {
       <Hero />
       <Categories />
       <TopProducts />
+      <Reviews />
       <Features />
     </>
   );

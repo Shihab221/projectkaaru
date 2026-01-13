@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
               size: item.size || null,
               backgroundColor: item.backgroundColor || null,
               borderColor: item.borderColor || null,
+              customization: item.customization || null,
             }))
           }
         },

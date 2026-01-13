@@ -183,6 +183,9 @@ export default function ProductDetailPage() {
     }
 
     try {
+      // Check if this is a keychain product that needs text customization
+      const isKeychain = product.category?.slug === 'key-chains';
+      
       dispatch(
         addToCart({
           id: product.id,
@@ -196,6 +199,7 @@ export default function ProductDetailPage() {
           size: selectedSize || undefined,
           selectedBackgroundColor: selectedBackgroundColor || undefined,
           selectedBorderColor: selectedBorderColor || undefined,
+          customization: isKeychain ? { type: "keychain_text" } : undefined,
         })
       );
       dispatch(openCart());
@@ -240,6 +244,9 @@ export default function ProductDetailPage() {
       // Clear cart first, then add this product
       dispatch(clearCart());
 
+      // Check if this is a keychain product that needs text customization
+      const isKeychain = product.category?.slug === 'key-chains';
+
       // Add product to cart with all selected options
       dispatch(
         addToCart({
@@ -254,6 +261,7 @@ export default function ProductDetailPage() {
           size: selectedSize || undefined,
           selectedBackgroundColor: selectedBackgroundColor || undefined,
           selectedBorderColor: selectedBorderColor || undefined,
+          customization: isKeychain ? { type: "keychain_text" } : undefined,
         })
       );
 
