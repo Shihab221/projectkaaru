@@ -40,6 +40,24 @@ export function ProductCard({ product }: ProductCardProps) {
     ? calculateDiscount(product.price, product.discountedPrice!)
     : 0;
 
+  // Check if this is a keychain product - multiple detection methods
+  const isKeychainByCategory = product.category?.slug === "key-chains" ||
+                              product.category?.slug === "keychains" ||
+                              (product.category?.name && (
+                                product.category.name.toLowerCase().includes("key") ||
+                                product.category.name.toLowerCase().includes("chain")
+                              ));
+
+  const isKeychainByName = product.name?.toLowerCase().includes("key") ||
+                          product.name?.toLowerCase().includes("chain");
+
+  const isKeychain = isKeychainByCategory || isKeychainByName;
+
+
+  // Temporary: Force keychain detection for testing (remove this line after testing)
+  // const isKeychain = true;
+
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -60,6 +78,10 @@ export function ProductCard({ product }: ProductCardProps) {
           image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
           quantity: 1,
           stock: product.stock,
+          customization: isKeychain ? {
+            type: "keychain_text",
+            text: "" // Will be filled during checkout
+          } : undefined,
         })
       );
       dispatch(openCart());
@@ -92,6 +114,10 @@ export function ProductCard({ product }: ProductCardProps) {
           image: (product.images && product.images.length > 0 && product.id) ? `/api/images/${product.id}/0` : "",
           quantity: 1,
           stock: product.stock,
+          customization: isKeychain ? {
+            type: "keychain_text",
+            text: "" // Will be filled during checkout
+          } : undefined,
         })
       );
 
@@ -192,6 +218,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </Link>
+
 
       {/* Action Buttons */}
       <div className="px-4 pb-4 grid grid-cols-2 gap-2">

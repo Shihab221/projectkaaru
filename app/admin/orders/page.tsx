@@ -43,6 +43,7 @@ interface Order {
     size?: string;
     backgroundColor?: string;
     borderColor?: string;
+    customization?: string;
   }[];
   shippingAddress: {
     name: string;
@@ -457,6 +458,30 @@ export default function AdminOrdersPage() {
                               </div>
                             </div>
                           )}
+                          {item.customization && (() => {
+                            try {
+                              const customizationData = JSON.parse(item.customization);
+                              if (customizationData.type === "keychain_text" && customizationData.text) {
+                                return (
+                                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-xs font-semibold text-blue-800 mb-1">📝 Keychain Text:</p>
+                                    <p className="text-sm font-medium text-blue-900">"{customizationData.text}"</p>
+                                  </div>
+                                );
+                              }
+                            } catch (error) {
+                              // If parsing fails, try to display as plain text
+                              if (item.customization) {
+                                return (
+                                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-xs font-semibold text-blue-800 mb-1">📝 Customization:</p>
+                                    <p className="text-sm font-medium text-blue-900">{item.customization}</p>
+                                  </div>
+                                );
+                              }
+                            }
+                            return null;
+                          })()}
                           <p className="text-sm text-gray-500 mt-1">Qty: {item.quantity}</p>
                         </div>
                         <p className="font-semibold text-secondary">

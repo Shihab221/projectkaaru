@@ -13,6 +13,7 @@ import {
   Package,
   Check,
   Loader2,
+  Type,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import {
@@ -43,6 +44,8 @@ interface CheckoutForm {
   paymentMethod: "cod" | "bkash" | "nagad";
   transactionId: string;
   notes: string;
+  // Customization
+  customizations: Record<string, string>; // itemId -> customization text
 }
 
 const paymentMethods = [
@@ -88,6 +91,7 @@ export default function CheckoutPage() {
     paymentMethod: "cod",
     transactionId: "",
     notes: "",
+    customizations: {},
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,6 +230,23 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate keychain customizations
+    const keychainItems = cartItems.filter(item =>
+      item.customization?.type === "keychain_text"
+    );
+
+    for (const item of keychainItems) {
+      const customizationText = formData.customizations[item.id];
+      if (!customizationText || !customizationText.trim()) {
+        toast.error(`Please enter customization text for ${item.name}`);
+        return;
+      }
+      if (customizationText.length > 20) {
+        toast.error(`Customization text for ${item.name} must be 20 characters or less`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -239,6 +260,14 @@ export default function CheckoutPage() {
           size: item.size,
           backgroundColor: item.selectedBackgroundColor,
           borderColor: item.selectedBorderColor,
+          customization: item.customization?.type === "keychain_text"
+            ? JSON.stringify({
+                type: "keychain_text",
+                text: formData.customizations[item.id]?.trim() || ""
+              })
+            : item.customization
+              ? JSON.stringify(item.customization)
+              : null,
         })),
         shippingAddress: {
           name: formData.name,
@@ -504,6 +533,7 @@ export default function CheckoutPage() {
               </div>
             </motion.div>
 
+
             {/* Payment Method */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -711,6 +741,63 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Keychain Customizations - Required before ordering */}
+              {cartItems.some(item => item.customization?.type === "keychain_text") && (
+                <div className="border-t border-gray-100 pt-4 mt-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                      <Type className="w-4 h-4" />
+                      Keychain Customizations Required
+                    </h3>
+                    <div className="space-y-3">
+                      {cartItems
+                        .filter(item => item.customization?.type === "keychain_text")
+                        .map((item) => (
+                          <div key={item.id} className="bg-white rounded-md p-3 border border-blue-300">
+                            <div className="flex items-center gap-3 mb-2">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-8 h-8 rounded object-cover"
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Enter text for keychain *
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.customizations[item.id] || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value.slice(0, 20);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customizations: {
+                                      ...prev.customizations,
+                                      [item.id]: value
+                                    }
+                                  }));
+                                }}
+                                placeholder="e.g., John Doe"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                maxLength={20}
+                                required
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                {(formData.customizations[item.id] || "").length}/20 characters
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -722,7 +809,14 @@ export default function CheckoutPage() {
                     Placing Order...
                   </>
                 ) : (
-                  `Place Order • ${formatPrice(total)}`
+                  <>
+                    Place Order • {formatPrice(total)}
+                    {cartItems.some(item => item.customization?.type === "keychain_text") && (
+                      <span className="block text-xs mt-1 opacity-90">
+                        ⚠️ Keychain customizations required
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             </motion.div>

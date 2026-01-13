@@ -158,6 +158,7 @@ model OrderItem {
   size            String?
   backgroundColor String?
   borderColor     String?
+  customization   String? // JSON string for customizations like keychain text
 
   // Foreign keys
   orderId         String

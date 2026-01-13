@@ -158,6 +158,12 @@ export function CartSidebar() {
                           </div>
                         )}
 
+                        {item.customization && item.customization.type === "keychain_text" && (
+                          <div className="text-xs text-blue-600 mt-1 bg-blue-50 px-2 py-1 rounded">
+                            <span className="font-medium">📝</span> Text will be added at checkout
+                          </div>
+                        )}
+
                         <p className="text-primary font-semibold mt-1">
                           {formatPrice(item.discountedPrice || item.price)}
                         </p>

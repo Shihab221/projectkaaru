@@ -210,7 +210,7 @@ export default function ContactPage() {
 
                   {/* Email */}
                   <a
-                    href="mailto:hello@projectkaru.com"
+                    href="mailto:projectkarubd@gmail.com"
                     className="flex items-center gap-4 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                   >
                     <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -218,7 +218,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="font-medium text-secondary">Email Us</p>
-                      <p className="text-sm text-gray-600">hello@projectkaru.com</p>
+                      <p className="text-sm text-gray-600">projectkarubd@gmail.com</p>
                     </div>
                   </a>
 

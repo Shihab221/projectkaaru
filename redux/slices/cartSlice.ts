@@ -14,6 +14,11 @@ export interface CartItem {
   size?: string;
   selectedBackgroundColor?: string; // Customer's selected background color
   selectedBorderColor?: string; // Customer's selected border color
+  customization?: {
+    type: string;
+    text?: string;
+    [key: string]: any;
+  };
 }
 
 // Cart state interface

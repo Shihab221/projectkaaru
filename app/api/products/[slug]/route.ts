@@ -52,10 +52,20 @@ export async function GET(
           id: { not: product.id },
           isActive: true,
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          shortDescription: true,
+          price: true,
+          discountedPrice: true,
+          stock: true,
+          isTopProduct: true,
           category: {
             select: { id: true, name: true, slug: true }
-          }
+          },
+          images: true, // Include images for related products
         },
         take: 4,
       });
