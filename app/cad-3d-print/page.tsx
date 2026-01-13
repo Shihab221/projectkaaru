@@ -161,7 +161,7 @@ export default function Cad3dPrintPage() {
             >
               <div className="relative w-full max-w-md mx-auto aspect-square bg-gray-200 rounded-lg overflow-hidden">
                 <Image
-                  src="/akib.png"
+                  src="/akib.jpg"
                   alt="Akib - Mechanical Design Engineer"
                   fill
                   className="object-cover"

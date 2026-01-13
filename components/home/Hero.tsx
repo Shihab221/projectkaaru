@@ -119,7 +119,7 @@ export function Hero() {
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
-                  href="/custom"
+                  href="/cad-3d-print"
                   className="btn border-2 border-white/30 text-white hover:bg-white/10"
                 >
                   Request Custom Order
