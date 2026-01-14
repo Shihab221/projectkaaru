@@ -565,7 +565,7 @@ export default function ProductDetailPage() {
                 {product.backgroundColors && product.backgroundColors.length > 0 && (
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Keychain Background Color: <span className="text-primary font-semibold">{selectedBackgroundColor ? KEYCHAIN_COLORS.find(c => c.hex === selectedBackgroundColor)?.name : 'Please select'}</span>
+                      Keychain Font Color: <span className="text-primary font-semibold">{selectedBackgroundColor ? KEYCHAIN_COLORS.find(c => c.hex === selectedBackgroundColor)?.name : 'Please select'}</span>
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {product.backgroundColors.map((colorHex) => {
