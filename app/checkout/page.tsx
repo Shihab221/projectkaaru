@@ -526,8 +526,8 @@ export default function CheckoutPage() {
                     className="input"
                   >
                     <option value="Bangladesh">Bangladesh</option>
-                    <option value="India">India</option>
-                    <option value="Pakistan">Pakistan</option>
+                    {/* <option value="India">India</option>
+                    <option value="Pakistan">Pakistan</option> */}
                   </select>
                 </div>
               </div>
@@ -769,6 +769,10 @@ export default function CheckoutPage() {
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Enter text for keychain *
                               </label>
+                              <div>
+                                <p className="text-red-600 mb-4">নামের বানানের ক্ষেত্রে ১টা শব্দ ব্যবহার করুন।  <br/> যেমন: Rafia, Samantha, Ariyan</p>
+                                
+                              </div>
                               <input
                                 type="text"
                                 value={formData.customizations[item.id] || ""}
@@ -782,14 +786,14 @@ export default function CheckoutPage() {
                                     }
                                   }));
                                 }}
-                                placeholder="e.g., John Doe"
+                                placeholder="e.g., Shihab"
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 maxLength={20}
                                 required
                               />
-                              <p className="text-xs text-gray-500 mt-1">
+                              {/* <p className="text-xs text-gray-500 mt-1">
                                 {(formData.customizations[item.id] || "").length}/20 characters
-                              </p>
+                              </p> */}
                             </div>
                           </div>
                         ))}
