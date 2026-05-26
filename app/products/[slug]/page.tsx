@@ -267,7 +267,9 @@ export default function ProductDetailPage() {
 
       // Small delay to ensure cart operation completes before redirect
       setTimeout(() => {
-        router.push("/checkout");
+        router.push(
+          `/checkout?from=${encodeURIComponent(`/products/${product.slug}`)}`
+        );
       }, 100);
     } catch (error) {
       console.error("Error with Buy Now:", error);

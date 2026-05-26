@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import {
   selectCartItems,
@@ -20,6 +21,7 @@ import toast from "react-hot-toast";
 
 export function CartSidebar() {
   const dispatch = useAppDispatch();
+  const pathname = usePathname();
   const isOpen = useAppSelector(selectIsCartOpen);
   const items = useAppSelector(selectCartItems);
   const total = useAppSelector(selectCartTotal);
@@ -28,6 +30,13 @@ export function CartSidebar() {
   const invalidItems = items.filter(item =>
     !item.id || typeof item.id !== 'string' || item.id.trim() === ''
   );
+
+  const checkoutHref =
+    pathname?.startsWith("/products/")
+      ? `/checkout?from=${encodeURIComponent(pathname)}`
+      : items.length === 1 && items[0]?.slug
+        ? `/checkout?from=${encodeURIComponent(`/products/${items[0].slug}`)}`
+        : "/checkout";
 
   return (
     <AnimatePresence>
@@ -255,7 +264,7 @@ export function CartSidebar() {
                     View Cart
                   </Link>
                   <Link
-                    href="/checkout"
+                    href={checkoutHref}
                     onClick={() => dispatch(closeCart())}
                     className="btn btn-primary text-center"
                   >

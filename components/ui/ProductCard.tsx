@@ -123,7 +123,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
       // Small delay to ensure cart operation completes before redirect
       setTimeout(() => {
-        window.location.href = "/checkout";
+        window.location.href = `/checkout?from=${encodeURIComponent(
+          `/products/${product.slug}`
+        )}`;
       }, 100);
     } catch (error) {
       console.error("Error with Buy Now:", error);

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CreditCard,
@@ -28,6 +28,7 @@ import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
+import { sanitizeAuthRedirect } from "@/lib/sanitize-auth-redirect";
 
 interface CheckoutForm {
   // Customer Details
@@ -69,8 +70,9 @@ const paymentMethods = [
   },
 ];
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 
   const cartItems = useAppSelector(selectCartItems);
@@ -112,12 +114,22 @@ export default function CheckoutPage() {
     return true;
   };
 
-  // Redirect if not authenticated
+  const fromCheckout = searchParams.get("from");
+  const redirectAfterLogin = sanitizeAuthRedirect(fromCheckout, "/checkout");
+
+  // Redirect if not authenticated — preserve product URL when arriving from PDP
   useEffect(() => {
     if (authInitialized && !isAuthenticated) {
-      router.replace("/auth?redirect=/checkout");
+      router.replace(
+        `/auth?redirect=${encodeURIComponent(redirectAfterLogin)}`
+      );
     }
-  }, [authInitialized, isAuthenticated, router]);
+  }, [
+    authInitialized,
+    isAuthenticated,
+    router,
+    redirectAfterLogin,
+  ]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -828,5 +840,19 @@ export default function CheckoutPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </div>
+      }
+    >
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

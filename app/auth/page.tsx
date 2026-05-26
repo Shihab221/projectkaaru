@@ -16,6 +16,7 @@ import {
   clearError,
 } from "@/redux/slices/authSlice";
 import toast from "react-hot-toast";
+import { sanitizeAuthRedirect } from "@/lib/sanitize-auth-redirect";
 
 type AuthMode = "login" | "signup";
 
@@ -37,7 +38,7 @@ function AuthPageContent() {
   const isAdmin = useAppSelector(selectIsAdmin);
   const authInitialized = useAppSelector(selectAuthInitialized);
 
-  const redirect = searchParams.get("redirect") || "/";
+  const redirect = sanitizeAuthRedirect(searchParams.get("redirect"), "/");
 
   useEffect(() => {
     // Only redirect once auth is initialized and user is authenticated
