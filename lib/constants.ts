@@ -101,7 +101,7 @@ export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
   { label: "CAD & 3D Print", href: "/cad-3d-print" },
-  { label: "Categories", href: "/categories" },
+  { label: "Tutorial", href: "/tutorial" },
   { label: "Contact", href: "/contact" },
 ];
 

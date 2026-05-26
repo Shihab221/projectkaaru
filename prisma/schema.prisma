@@ -49,6 +49,20 @@ model Address {
   @@map("addresses")
 }
 
+// YouTube tutorial entries (managed in admin, shown on /tutorial)
+model Tutorial {
+  id               String   @id @default(cuid())
+  title            String
+  shortDescription String?
+  youtubeUrl       String
+  sortOrder        Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("tutorials")
+}
+
 // Category model
 model Category {
   id            String   @id @default(cuid())

@@ -18,6 +18,7 @@ import {
   Truck,
   Settings,
   Grid3X3,
+  Video,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { selectIsAdmin, selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
@@ -47,6 +48,12 @@ const quickActions = [
     description: "Edit product categories",
     href: "/admin/categories",
     icon: Grid3X3,
+  },
+  {
+    title: "YouTube tutorials",
+    description: "Add video links for the Tutorial page",
+    href: "/admin/tutorials",
+    icon: Video,
   },
   {
     title: "Manage Users",
