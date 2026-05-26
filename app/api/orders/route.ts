@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import {
+  type DeliveryZone,
+  getShippingCostForZone,
+} from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +22,29 @@ export async function POST(request: NextRequest) {
       paymentStatus = "pending",
       itemsTotal,
       shippingCost,
+      deliveryZone,
       discount = 0,
       paymentProcessingFee = 0,
       total,
       notes,
       transactionId,
     } = body;
+
+    const validDeliveryZones: DeliveryZone[] = ["inside_dhaka", "outside_dhaka"];
+    if (!deliveryZone || !validDeliveryZones.includes(deliveryZone)) {
+      return NextResponse.json(
+        { error: "Please select a delivery option (Inside or Outside Dhaka)" },
+        { status: 400 }
+      );
+    }
+
+    const expectedShippingCost = getShippingCostForZone(deliveryZone);
+    if (typeof shippingCost !== "number" || shippingCost !== expectedShippingCost) {
+      return NextResponse.json(
+        { error: "Invalid shipping cost for selected delivery zone" },
+        { status: 400 }
+      );
+    }
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {

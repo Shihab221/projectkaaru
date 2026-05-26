@@ -24,7 +24,12 @@ import {
 } from "@/redux/slices/cartSlice";
 import { selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
 import { formatPrice } from "@/lib/utils";
-import { KEYCHAIN_COLORS } from "@/lib/constants";
+import {
+  KEYCHAIN_COLORS,
+  DELIVERY_OPTIONS,
+  type DeliveryZone,
+  getShippingCostForZone,
+} from "@/lib/constants";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/analytics";
@@ -47,6 +52,8 @@ interface CheckoutForm {
   notes: string;
   // Customization
   customizations: Record<string, string>; // itemId -> customization text
+  // Delivery
+  deliveryZone: DeliveryZone;
 }
 
 const paymentMethods = [
@@ -94,6 +101,7 @@ function CheckoutPageContent() {
     transactionId: "",
     notes: "",
     customizations: {},
+    deliveryZone: "inside_dhaka",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,7 +161,7 @@ function CheckoutPageContent() {
         (total, item) => total + (item.discountedPrice || item.price) * item.quantity,
         0
       );
-      const shippingCost = itemsTotal > 1000 ? 0 : 60;
+      const shippingCost = getShippingCostForZone(formData.deliveryZone);
       const checkoutTotal = itemsTotal + shippingCost;
 
       const contents = cartItems.map((item) => ({
@@ -166,14 +174,14 @@ function CheckoutPageContent() {
 
       trackInitiateCheckout(checkoutTotal, "BDT", contents);
     }
-  }, [isAuthenticated, cartItems.length]); // Only track once when page loads
+  }, [isAuthenticated, cartItems.length, formData.deliveryZone]);
 
   // Calculate totals
   const itemsTotal = cartItems.reduce(
     (total, item) => total + (item.discountedPrice || item.price) * item.quantity,
     0
   );
-  const shippingCost = itemsTotal > 1000 ? 0 : 60; // Free shipping over ৳1000, otherwise ৳60
+  const shippingCost = getShippingCostForZone(formData.deliveryZone);
   const discount = 0; // Could be implemented later with coupons
 
   // Payment processing fee: 1.8% for bkash and nagad
@@ -198,6 +206,13 @@ function CheckoutPageContent() {
       ...prev,
       paymentMethod: method,
       transactionId: method === "cod" ? "" : prev.transactionId,
+    }));
+  };
+
+  const handleDeliveryZoneChange = (zone: DeliveryZone) => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryZone: zone,
     }));
   };
 
@@ -261,6 +276,16 @@ function CheckoutPageContent() {
 
     setIsSubmitting(true);
 
+    const deliveryLabel =
+      DELIVERY_OPTIONS.find((o) => o.id === formData.deliveryZone)?.label ??
+      formData.deliveryZone;
+    const notesWithDelivery = [
+      `Delivery: ${deliveryLabel}`,
+      formData.notes.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     try {
       const orderData = {
         items: cartItems.map((item) => ({
@@ -292,12 +317,13 @@ function CheckoutPageContent() {
         },
         paymentMethod: formData.paymentMethod,
         paymentStatus: formData.paymentMethod === "cod" ? "pending" : "paid",
+        deliveryZone: formData.deliveryZone,
         itemsTotal,
         shippingCost,
         discount,
         paymentProcessingFee,
         total,
-        notes: formData.notes,
+        notes: notesWithDelivery,
         transactionId: formData.transactionId,
       };
 
@@ -545,6 +571,47 @@ function CheckoutPageContent() {
               </div>
             </motion.div>
 
+            {/* Delivery option */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="card p-6"
+            >
+              <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                Delivery Option
+              </h2>
+              <div className="space-y-3">
+                {DELIVERY_OPTIONS.map((option) => (
+                  <label
+                    key={option.id}
+                    className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.deliveryZone === option.id
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="deliveryZone"
+                      value={option.id}
+                      checked={formData.deliveryZone === option.id}
+                      onChange={() => handleDeliveryZoneChange(option.id)}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <Truck className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-secondary">{option.label}</p>
+                      <p className="text-sm text-gray-500">{option.description}</p>
+                    </div>
+                    <p className="font-semibold text-primary whitespace-nowrap">
+                      {formatPrice(option.charge)}
+                    </p>
+                  </label>
+                ))}
+              </div>
+            </motion.div>
 
             {/* Payment Method */}
             <motion.div
@@ -732,8 +799,11 @@ function CheckoutPageContent() {
                   <span>{formatPrice(itemsTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Shipping</span>
-                  <span>{shippingCost === 0 ? "Free" : formatPrice(shippingCost)}</span>
+                  <span className="text-gray-500">
+                    Courier (
+                    {DELIVERY_OPTIONS.find((o) => o.id === formData.deliveryZone)?.label})
+                  </span>
+                  <span>{formatPrice(shippingCost)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">

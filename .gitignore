@@ -28,6 +28,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# Database JSON backups (may contain user data)
+/prisma/backups/
+
 # Vercel
 .vercel
 

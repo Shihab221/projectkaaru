@@ -35,11 +35,12 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-            <Image 
-              src="/Logo.png"
+            <Image
+              src="/5.png"
               alt="ProjectKaru Logo"
               width={80}
               height={80}
+              className="h-16 w-auto object-contain"
             />
             </Link>
             <p className="text-gray-400 text-sm mb-6 max-w-md">

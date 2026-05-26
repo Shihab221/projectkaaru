@@ -63,7 +63,7 @@ async function main() {
     });
 
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash("12345678", 12);
+      const hashedPassword = await bcrypt.hash("turtlebeach", 12);
       await prisma.user.create({
         data: {
           name: "Super Admin",
@@ -80,7 +80,7 @@ async function main() {
     console.log('\n🎉 Database seeded successfully!');
     console.log('\n📋 Admin Credentials:');
     console.log('   Email: admin@projectkaru.com');
-    console.log('   Password: 12345678');
+    console.log('   Password: turtlebeach');
     console.log('\n⚠️  IMPORTANT: Change this password after first login!');
 
   } catch (error) {

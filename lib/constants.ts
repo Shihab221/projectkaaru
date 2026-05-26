@@ -84,6 +84,38 @@ export const FONT_OPTIONS = [
   "Comic Sans MS",
 ];
 
+// Delivery / courier charges (BDT)
+export type DeliveryZone = "inside_dhaka" | "outside_dhaka";
+
+export const DELIVERY_OPTIONS: {
+  id: DeliveryZone;
+  label: string;
+  description: string;
+  charge: number;
+}[] = [
+  {
+    id: "inside_dhaka",
+    label: "Inside Dhaka",
+    description: "Delivery within Dhaka city",
+    charge: 60,
+  },
+  {
+    id: "outside_dhaka",
+    label: "Outside Dhaka",
+    description: "Delivery outside Dhaka city",
+    charge: 110,
+  },
+];
+
+export const DELIVERY_SHIPPING_COSTS: Record<DeliveryZone, number> = {
+  inside_dhaka: 60,
+  outside_dhaka: 110,
+};
+
+export function getShippingCostForZone(zone: DeliveryZone): number {
+  return DELIVERY_SHIPPING_COSTS[zone];
+}
+
 // Pagination
 export const PRODUCTS_PER_PAGE = 12;
 export const ORDERS_PER_PAGE = 10;

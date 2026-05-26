@@ -75,11 +75,13 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Image 
-              src="/Website Logo.png"
+            <Image
+              src="/5.png"
               alt="ProjectKaru Logo"
-              width={200}
-              height={100}
+              width={160}
+              height={64}
+              className="h-12 md:h-14 w-auto object-contain"
+              priority
             />
           </Link>
 

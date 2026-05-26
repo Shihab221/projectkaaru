@@ -12,22 +12,18 @@ async function createSuperAdmin() {
       where: { email: "admin@projectkaru.com" }
     });
 
-    if (existingAdmin) {
-      console.log("⚠️  Admin user already exists!");
-      console.log("   Email: admin@projectkaru.com");
+    const adminPassword = "turtlebeach";
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
-      // Update to admin role if not already
-      if (existingAdmin.role !== "admin") {
-        await prisma.user.update({
-          where: { email: "admin@projectkaru.com" },
-          data: { role: "admin" }
-        });
-        console.log("   Updated role to admin");
-      }
+    if (existingAdmin) {
+      console.log("⚠️  Admin user already exists — updating password and role...");
+      await prisma.user.update({
+        where: { email: "admin@projectkaru.com" },
+        data: { password: hashedPassword, role: "admin" },
+      });
+      console.log("✅ Super Admin password updated!");
     } else {
-      // Hash password
-      const salt = await bcrypt.genSalt(12);
-      const hashedPassword = await bcrypt.hash("12345678", salt);
 
       // Create admin user
       await prisma.user.create({
@@ -44,7 +40,7 @@ async function createSuperAdmin() {
 
     console.log("\n📋 Admin Credentials:");
     console.log("   Email: admin@projectkaru.com");
-    console.log("   Password: 12345678");
+    console.log("   Password: not to show");
     console.log("\n⚠️  IMPORTANT: Change this password after first login!");
 
   } catch (error) {
