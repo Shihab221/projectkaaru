@@ -20,25 +20,3 @@ jobs:
           password: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: cd /var/www/projectkaaru && chmod +x .scripts/deploy.sh && bash .scripts/deploy.sh
-name: Deploy
-
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          script: cd /var/www/projectkaaru && chmod +x .scripts/deploy.sh && bash .scripts/deploy.sh
