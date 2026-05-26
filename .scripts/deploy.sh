@@ -10,6 +10,31 @@ git reset --hard origin/main
 git clean -fd
 echo "✅ Repository is now up to date with origin/main."
 
+# Load NVM in non-interactive shells used by CI/SSH deploys.
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+	# shellcheck disable=SC1090
+	. "$NVM_DIR/nvm.sh"
+elif [ -s "/usr/local/nvm/nvm.sh" ]; then
+	# shellcheck disable=SC1091
+	. "/usr/local/nvm/nvm.sh"
+fi
+
+if command -v nvm >/dev/null 2>&1; then
+	if [ -f ".nvmrc" ]; then
+		nvm install >/dev/null
+		nvm use >/dev/null
+	else
+		nvm use --lts >/dev/null || true
+	fi
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+	echo "❌ npm not found. Ensure Node.js is installed and NVM is configured for this user."
+	exit 1
+fi
+
 # Install dependencies
 echo "Installing dependencies..."
 npm ci --no-audit --prefer-offline --legacy-peer-deps
