@@ -15,13 +15,10 @@ const footerLinks = {
   ],
   company: [
     { label: "Contact", href: "/contact" },
-    { label: "Custom Orders", href: "/custom" },
     { label: "FAQ", href: "/faq" },
   ],
   support: [
-    { label: "Shipping Info", href: "/shipping" },
-    { label: "Returns", href: "/returns" },
-    { label: "Track Order", href: "/track" },
+    { label: "Returns & Exchange", href: "/returns" },
     { label: "Privacy Policy", href: "/privacy" },
   ],
 };
