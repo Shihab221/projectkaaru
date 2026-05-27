@@ -14,7 +14,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { event, data } = body;
+    const { event, eventId, data } = body;
 
     if (!event) {
       return NextResponse.json(
@@ -26,11 +26,13 @@ export async function POST(request: NextRequest) {
     // Get the full URL for the event
     const url = request.headers.get('referer') || request.url;
 
+    console.log(`[Analytics] Processing ${event} event`, { eventId, data });
+
     let success = false;
 
     switch (event) {
       case 'PageView':
-        success = await trackPageView(request, url);
+        success = await trackPageView(request, url, eventId);
         break;
 
       case 'Purchase':
@@ -39,20 +41,24 @@ export async function POST(request: NextRequest) {
           data.value,
           data.currency || 'BDT',
           data.contents,
-          url
+          url,
+          eventId
         );
         break;
 
       case 'AddToCart':
+        // Handle both content_ids array and contentId singular
+        const addToCartContentId = data.content_ids?.[0] || data.contentId;
         success = await trackAddToCart(
           request,
           data.value,
           data.currency || 'BDT',
-          data.contentId,
-          data.contentName,
-          data.contentCategory,
+          addToCartContentId,
+          data.content_name || data.contentName,
+          data.content_category || data.contentCategory,
           data.quantity || 1,
-          url
+          url,
+          eventId
         );
         break;
 
@@ -62,41 +68,46 @@ export async function POST(request: NextRequest) {
           data.value,
           data.currency || 'BDT',
           data.contents,
-          url
+          url,
+          eventId
         );
         break;
 
       case 'ViewContent':
+        // Handle both content_ids array and contentId singular
+        const viewContentId = data.content_ids?.[0] || data.contentId;
         success = await trackViewContent(
           request,
-          data.contentId,
-          data.contentName,
-          data.contentCategory,
+          viewContentId,
+          data.content_name || data.contentName,
+          data.content_category || data.contentCategory,
           data.value,
           data.currency || 'BDT',
-          url
+          url,
+          eventId
         );
         break;
 
       case 'Search':
         success = await trackSearch(
           request,
-          data.searchString,
-          data.contentIds,
-          url
+          data.search_string || data.searchString,
+          data.content_ids || data.contentIds,
+          url,
+          eventId
         );
         break;
 
       case 'Contact':
-        success = await trackContact(request, url);
+        success = await trackContact(request, url, eventId);
         break;
 
       case 'Lead':
-        success = await trackLead(request, url);
+        success = await trackLead(request, url, eventId);
         break;
 
       case 'CompleteRegistration':
-        success = await trackCompleteRegistration(request, url);
+        success = await trackCompleteRegistration(request, url, eventId);
         break;
 
       default:
@@ -110,6 +121,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `${event} event tracked successfully`,
+        eventId,
       });
     } else {
       return NextResponse.json(

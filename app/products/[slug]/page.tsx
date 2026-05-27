@@ -28,6 +28,7 @@ import {
 } from "@/redux/slices/productSlice";
 import { addToCart, openCart, clearCart } from "@/redux/slices/cartSlice";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { Reviews } from "@/components/home/Reviews";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { KEYCHAIN_COLORS } from "@/lib/constants";
 import toast from "react-hot-toast";
@@ -713,6 +714,9 @@ export default function ProductDetailPage() {
             {product.description}
           </div>
         </div>
+
+        {/* Customer reviews slider (same as homepage) */}
+        <Reviews />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

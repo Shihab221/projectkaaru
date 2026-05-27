@@ -15,10 +15,19 @@
  */
 
 /**
+ * Generate unique event ID for deduplication between client and server events
+ */
+function generateEventId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
  * Send event to server-side tracking API
  */
 async function sendEventToServer(eventName: string, eventData?: Record<string, any>): Promise<boolean> {
   try {
+    const eventId = generateEventId();
+    
     const response = await fetch('/api/analytics/track', {
       method: 'POST',
       headers: {
@@ -26,6 +35,7 @@ async function sendEventToServer(eventName: string, eventData?: Record<string, a
       },
       body: JSON.stringify({
         event: eventName,
+        eventId,
         data: eventData || {},
       }),
     });
@@ -37,7 +47,7 @@ async function sendEventToServer(eventName: string, eventData?: Record<string, a
     }
 
     const result = await response.json();
-    console.log(`${eventName} event tracked successfully:`, result.message);
+    console.log(`${eventName} event tracked successfully (eventId: ${eventId}):`, result.message);
     return true;
   } catch (error) {
     console.error(`Error sending ${eventName} event to server:`, error);

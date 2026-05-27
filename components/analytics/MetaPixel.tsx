@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import Script from "next/script";
-import { trackPageView } from "@/lib/analytics";
 
 declare global {
   interface Window {
@@ -15,21 +13,24 @@ interface MetaPixelProps {
   pixelId: string;
 }
 
+/**
+ * Meta Pixel component - loads the base pixel for Pixel Helper detection.
+ * 
+ * IMPORTANT: All actual event tracking (AddToCart, Purchase, etc.) is done
+ * server-side via the Conversions API. This client-side pixel is only for:
+ * 1. Pixel Helper browser extension detection
+ * 2. Basic PageView for cookie/browser matching
+ * 
+ * Automatic Events are DISABLED to prevent false positives like "Subscribe" clicks.
+ */
 export function MetaPixel({ pixelId }: MetaPixelProps) {
-  useEffect(() => {
-    // Always track PageView using server-side tracking
-    trackPageView().catch((error) => {
-      console.error("Failed to track PageView:", error);
-    });
-  }, []);
-
   if (!pixelId) {
     return null;
   }
 
   return (
     <>
-      {/* Client-side pixel for Pixel Helper detection in all environments */}
+      {/* Client-side pixel for Pixel Helper detection */}
       <Script
         id="facebook-pixel"
         strategy="afterInteractive"
@@ -43,9 +44,20 @@ export function MetaPixel({ pixelId }: MetaPixelProps) {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
+            
+            // Initialize pixel with automatic events DISABLED
+            fbq('init', '${pixelId}', {}, {
+              autoConfig: false,
+              debug: false
+            });
+            
+            // Disable automatic button click tracking (prevents false "Subscribe" events)
+            fbq('set', 'autoConfig', false, '${pixelId}');
+            
+            // Only track PageView client-side (all other events go through Conversions API)
             fbq('track', 'PageView');
-            console.log('Meta Pixel loaded with ID: ${pixelId}');
+            
+            console.log('[Meta Pixel] Loaded with ID: ${pixelId} (autoConfig disabled)');
           `,
         }}
       />
