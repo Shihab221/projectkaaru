@@ -255,13 +255,21 @@ export function CartSidebar() {
                 <p className="text-xs text-gray-500">
                   Shipping & taxes calculated at checkout
                 </p>
-                <Link
-                  href={checkoutHref}
-                  onClick={() => dispatch(closeCart())}
-                  className="btn btn-primary text-center w-full"
-                >
-                  Checkout
-                </Link>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => dispatch(closeCart())}
+                    className="btn btn-secondary text-center"
+                  >
+                    Continue Shopping
+                  </button>
+                  <Link
+                    href={checkoutHref}
+                    onClick={() => dispatch(closeCart())}
+                    className="btn btn-primary text-center"
+                  >
+                    Checkout
+                  </Link>
+                </div>
               </div>
             )}
           </motion.div>

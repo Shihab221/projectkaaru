@@ -268,8 +268,8 @@ function CheckoutPageContent() {
         toast.error(`Please enter customization text for ${item.name}`);
         return;
       }
-      if (customizationText.length > 20) {
-        toast.error(`Customization text for ${item.name} must be 20 characters or less`);
+      if (customizationText.length > 100) {
+        toast.error(`Customization text for ${item.name} must be 100 characters or less`);
         return;
       }
     }
@@ -849,17 +849,16 @@ function CheckoutPageContent() {
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Enter text for keychain *
+                                Enter text for keychain * <span className="text-gray-400 font-normal">(max 100 characters)</span>
                               </label>
                               <div>
                                 <p className="text-red-600 mb-4">নামের বানানের ক্ষেত্রে ১টা শব্দ ব্যবহার করুন।  <br/> যেমন: Rafia, Samantha, Ariyan</p>
-                                
                               </div>
                               <input
                                 type="text"
                                 value={formData.customizations[item.id] || ""}
                                 onChange={(e) => {
-                                  const value = e.target.value.slice(0, 20);
+                                  const value = e.target.value.slice(0, 100);
                                   setFormData(prev => ({
                                     ...prev,
                                     customizations: {
@@ -870,12 +869,12 @@ function CheckoutPageContent() {
                                 }}
                                 placeholder="e.g., Shihab"
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                maxLength={20}
+                                maxLength={100}
                                 required
                               />
-                              {/* <p className="text-xs text-gray-500 mt-1">
-                                {(formData.customizations[item.id] || "").length}/20 characters
-                              </p> */}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {(formData.customizations[item.id] || "").length}/100 characters
+                              </p>
                             </div>
                           </div>
                         ))}
