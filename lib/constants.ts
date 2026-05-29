@@ -77,6 +77,7 @@ export const KEYCHAIN_COLORS = [
   { name: "Silver", hex: "#A6A9AA" },
   { name: "Grey", hex: "#8E9089" },
   { name: "Purple", hex: "#6A3D8F" },
+  { name: "Blue", hex: "#1B2A6B" },
 ];
 
 export const FONT_OPTIONS = [
