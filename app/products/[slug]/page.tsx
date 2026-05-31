@@ -383,8 +383,8 @@ export default function ProductDetailPage() {
   const isKeychainProduct = product.category?.slug === KEYCHAIN_CATEGORY_SLUG;
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <div className="container-custom py-6 md:py-8 max-w-full">
+    <div className="min-h-screen bg-background">
+      <div className="container-custom py-6 md:py-8">
         {/* Back Button */}
         <div className="flex items-center justify-between mb-6">
           <button
@@ -412,22 +412,21 @@ export default function ProductDetailPage() {
 
         {/* Product Section */}
         <div
-          className="grid md:grid-cols-2 gap-8 md:gap-12 rounded-2xl p-6 md:p-8 bg-white border-2 border-gray-200 min-w-0 max-w-full overflow-hidden"
+          className="grid md:grid-cols-2 gap-8 md:gap-12 rounded-2xl p-6 md:p-8 bg-white border-2 border-gray-200"
         >
           {/* Images */}
-          <div className="min-w-0 w-full max-w-full">
+          <div>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="relative aspect-square w-full max-w-full rounded-2xl overflow-hidden bg-gray-100"
+              className="aspect-square rounded-2xl overflow-hidden bg-gray-100 relative"
             >
               {product.images && product.images.length > selectedImage && product.id ? (
                 <Image
                   src={`/api/images/${product.id}/${selectedImage}`}
                   alt={product.name}
                   fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 600px"
-                  className="object-cover object-center"
+                  className="object-cover"
                   priority
                 />
               ) : (
@@ -454,12 +453,12 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
-              <div className="flex flex-wrap gap-3 mt-4 max-w-full">
+              <div className="flex gap-3 mt-4">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImage === index
                         ? "border-primary"
                         : "border-transparent hover:border-gray-300"
@@ -489,7 +488,6 @@ export default function ProductDetailPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="min-w-0 w-full max-w-full"
           >
             <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-2">
               {product.name}
@@ -744,15 +742,13 @@ export default function ProductDetailPage() {
         {/* Full Description (under image/cart section) */}
         <div className="mt-8 bg-white rounded-2xl p-6 border-2 border-gray-200 max-w-none overflow-hidden">
           <h3 className="text-xl font-bold text-secondary mb-4">Product Details</h3>
-          <div className="text-gray-600 leading-relaxed whitespace-pre-line break-words max-w-full">
+          <div className="text-gray-600 leading-relaxed whitespace-pre-line break-words overflow-wrap-anywhere">
             {product.description}
           </div>
         </div>
 
         {/* Customer reviews slider (same as homepage) */}
-        <div className="mt-8 w-full overflow-x-hidden">
-          <Reviews />
-        </div>
+        <Reviews />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
