@@ -23,15 +23,14 @@ export async function GET(
         category: {
           select: { id: true, name: true, slug: true }
         },
-        reviews: {
-          include: {
-            user: {
-              select: { id: true, name: true }
-            }
-          }
-        },
         sizes: true,
-        images: true,
+        images: {
+          select: {
+            id: true,
+            filename: true,
+          },
+          orderBy: { id: "asc" },
+        },
       }
     });
 
@@ -65,7 +64,10 @@ export async function GET(
           category: {
             select: { id: true, name: true, slug: true }
           },
-          images: true, // Include images for related products
+          images: {
+            take: 1,
+            select: { id: true, filename: true },
+          },
         },
         take: 4,
       });

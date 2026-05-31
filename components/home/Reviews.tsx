@@ -182,7 +182,7 @@ export function Reviews() {
                           ease: "easeInOut"
                         }}
                         className={`relative rounded-xl overflow-hidden shadow-lg flex-shrink-0 ${sizeClasses} ${
-                          review.isCenter ? "z-10" : Math.abs(review.position) === 1 ? "z-5" : "z-0"
+                          review.isCenter ? "z-10" : Math.abs(review.position) === 1 ? "z-[5]" : "z-0"
                         }`}
                       >
                         <Image
