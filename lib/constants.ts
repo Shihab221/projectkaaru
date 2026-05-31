@@ -52,6 +52,12 @@ export const USER_ROLES = {
   ADMIN: "admin",
 } as const;
 
+// Keychain category YouTube Short (shown on product detail page)
+export const KEYCHAIN_YOUTUBE_SHORT_URL =
+  "https://www.youtube.com/shorts/BQnQD9ScBes";
+
+export const KEYCHAIN_CATEGORY_SLUG = "key-chains";
+
 // Keychain colors
 export const KEYCHAIN_COLORS = [
   { name: "Yellow", hex: "#F4EE2A" },

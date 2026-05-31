@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Heart,
   Share2,
+  Youtube,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
@@ -30,7 +31,11 @@ import { addToCart, openCart, clearCart } from "@/redux/slices/cartSlice";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Reviews } from "@/components/home/Reviews";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
-import { KEYCHAIN_COLORS } from "@/lib/constants";
+import {
+  KEYCHAIN_COLORS,
+  KEYCHAIN_CATEGORY_SLUG,
+  KEYCHAIN_YOUTUBE_SHORT_URL,
+} from "@/lib/constants";
 import toast from "react-hot-toast";
 import { trackViewContent } from "@/lib/analytics";
 
@@ -375,6 +380,8 @@ export default function ProductDetailPage() {
     return null;
   }
 
+  const isKeychainProduct = product.category?.slug === KEYCHAIN_CATEGORY_SLUG;
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="container-custom py-6 md:py-8 max-w-full">
@@ -711,6 +718,28 @@ export default function ProductDetailPage() {
             </div>
           </motion.div>
         </div>
+
+        {/* Keychain tutorial short — keychain category only */}
+        {isKeychainProduct && (
+          <div className="mt-8 bg-white rounded-2xl p-6 border-2 border-gray-200 max-w-full overflow-hidden">
+            <h3 className="text-lg font-bold text-secondary mb-2">
+              How to order your keychain
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Watch this short video for a quick guide before you customize and
+              checkout.
+            </p>
+            <Link
+              href={KEYCHAIN_YOUTUBE_SHORT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#FF0000] hover:bg-[#CC0000] text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors w-fit"
+            >
+              <Youtube className="w-5 h-5" />
+              Watch on YouTube
+            </Link>
+          </div>
+        )}
 
         {/* Full Description (under image/cart section) */}
         <div className="mt-8 bg-white rounded-2xl p-6 border-2 border-gray-200 max-w-none overflow-hidden">
