@@ -214,6 +214,7 @@ model Order {
   total                Float
   status               OrderStatus      @default(pending)
   notes                String?
+  transactionId        String?
   trackingNumber       String?
   deliveredAt          DateTime?
   createdAt            DateTime         @default(now())

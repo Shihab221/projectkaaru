@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
             color: true,
             backgroundColor: true,
             borderColor: true,
+            customization: true,
           }
         }
       },

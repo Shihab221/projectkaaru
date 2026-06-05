@@ -33,7 +33,6 @@ export function ProductsPageContent() {
   const pagination = useAppSelector(selectPagination);
 
   const [showFilters, setShowFilters] = useState(false);
-  const [localSearch, setLocalSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [isSearching, setIsSearching] = useState(false);
 
@@ -49,44 +48,43 @@ export function ProductsPageContent() {
   const onSale = searchParams.get("onSale") === "true";
   const isTopProduct = searchParams.get("isTopProduct") === "true";
 
-  // Reset infinite scroll when filters change
+  // Local search input — kept in sync with URL (e.g. header search navigation)
+  const [localSearch, setLocalSearch] = useState(search);
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
+
+  // Reset and fetch when filters change
   useEffect(() => {
     setAllProducts([]);
     setCurrentPage(1);
     setHasMore(true);
-  }, [category, search, onSale, isTopProduct, sortBy]);
-
-  // Load initial products
-  useEffect(() => {
-    if (allProducts.length === 0 && !isLoading) {
-      dispatch(
-        fetchProducts({
-          category,
-          search,
-          onSale,
-          isTopProduct,
-          sortBy,
-          page: 1,
-        })
-      );
-    }
-  }, [dispatch, category, search, onSale, isTopProduct, sortBy, allProducts.length, isLoading]);
+    dispatch(
+      fetchProducts({
+        category,
+        search,
+        onSale,
+        isTopProduct,
+        sortBy,
+        page: 1,
+      })
+    );
+  }, [dispatch, category, search, onSale, isTopProduct, sortBy]);
 
   // Update allProducts when new products are loaded
   useEffect(() => {
-    if (products.length > 0) {
-      if (currentPage === 1) {
-        setAllProducts(products);
-      } else {
-        setAllProducts(prev => {
-          // Avoid duplicates by checking IDs
-          const existingIds = new Set(prev.map(p => p.id || p._id));
-          const newProducts = products.filter(p => !existingIds.has(p.id || p._id));
-          return [...prev, ...newProducts];
-        });
-      }
-      setHasMore(products.length === 12); // Assuming 12 products per page
+    if (currentPage === 1) {
+      setAllProducts(products);
+    } else if (products.length > 0) {
+      setAllProducts((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id || p._id));
+        const newProducts = products.filter(
+          (p) => !existingIds.has(p.id || p._id)
+        );
+        return [...prev, ...newProducts];
+      });
     }
+    setHasMore(products.length === 12);
   }, [products, currentPage]);
 
   // Infinite scroll load more function
@@ -111,34 +109,36 @@ export function ProductsPageContent() {
     }
   }, [dispatch, category, search, onSale, isTopProduct, sortBy, currentPage, hasMore, isLoading, isLoadingMore]);
 
-  // Debounced search to prevent excessive API calls
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  // Debounced URL update when typing in the products page search bar
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(localSearch);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [localSearch]);
+    const trimmedLocal = localSearch.trim();
+    const trimmedUrl = search.trim();
+    if (trimmedLocal === trimmedUrl) return;
 
-  useEffect(() => {
-    if (debouncedSearch !== search) {
+    const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      if (debouncedSearch.trim()) {
-        params.set("search", debouncedSearch.trim());
+      if (trimmedLocal) {
+        params.set("search", trimmedLocal);
       } else {
         params.delete("search");
       }
       router.replace(`/products?${params.toString()}`, { scroll: false });
-    }
-  }, [debouncedSearch, search, searchParams, router]);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, search, searchParams, router]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
+    const params = new URLSearchParams(searchParams.toString());
     if (localSearch.trim()) {
-      router.push(`/products?search=${encodeURIComponent(localSearch.trim())}`);
+      params.set("search", localSearch.trim());
+    } else {
+      params.delete("search");
     }
-    setTimeout(() => setIsSearching(false), 1000);
+    router.push(`/products?${params.toString()}`);
+    setTimeout(() => setIsSearching(false), 500);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -374,7 +374,7 @@ export function ProductsPageContent() {
                 </button>
                 {search && (
                   <button
-                    onClick={() => setLocalSearch("")}
+                    onClick={() => router.push("/products")}
                     className="btn btn-secondary"
                   >
                     Clear Search

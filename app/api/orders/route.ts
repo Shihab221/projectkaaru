@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
           total,
           status: "pending",
           notes,
+          transactionId: transactionId || null,
           shippingAddress: {
             create: {
               name: shippingAddress.name,

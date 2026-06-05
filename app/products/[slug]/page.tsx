@@ -13,7 +13,6 @@ import {
   Star,
   Truck,
   Shield,
-  ArrowLeft,
   Heart,
   Share2,
   Youtube,
@@ -385,18 +384,8 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container-custom py-6 md:py-8">
-        {/* Back Button */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to products
-          </button>
-
-          {/* Manual retry button - only show if there was an error */}
-          {hasShownError && (
+        {hasShownError && (
+          <div className="flex items-center justify-end mb-6">
             <button
               onClick={handleManualRetry}
               className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
@@ -407,8 +396,8 @@ export default function ProductDetailPage() {
               </svg>
               Retry
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Product Section */}
         <div

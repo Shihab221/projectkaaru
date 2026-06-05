@@ -24,6 +24,7 @@ import { KEYCHAIN_COLORS } from "@/lib/constants";
 
 interface Order {
   _id: string;
+  id: string;
   orderNumber: string;
   items: {
     name: string;
@@ -33,6 +34,7 @@ interface Order {
     size?: string;
     backgroundColor?: string;
     borderColor?: string;
+    customization?: string;
   }[];
   total: number;
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -156,11 +158,11 @@ export default function OrdersPage() {
             <div className="space-y-4">
               {orders.map((order, index) => {
                 const StatusIcon = statusIcons[order.status];
-                const isExpanded = expandedOrder === order._id;
+                const isExpanded = expandedOrder === (order.id || order._id);
 
                 return (
                   <motion.div
-                    key={order._id}
+                    key={order.id || order._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
@@ -168,7 +170,7 @@ export default function OrdersPage() {
                   >
                     {/* Order Header */}
                     <button
-                      onClick={() => setExpandedOrder(isExpanded ? null : order._id)}
+                      onClick={() => setExpandedOrder(isExpanded ? null : (order.id || order._id))}
                       className="w-full p-6 text-left hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center justify-between">
@@ -267,6 +269,29 @@ export default function OrdersPage() {
                                     )}
                                   </div>
                                 )}
+                                {item.customization && (() => {
+                                  try {
+                                    const customizationData = JSON.parse(item.customization);
+                                    if (customizationData.type === "keychain_text" && customizationData.text) {
+                                      return (
+                                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                          <p className="text-xs font-semibold text-blue-800">📝 Your Keychain Text:</p>
+                                          <p className="text-sm font-medium text-blue-900">&quot;{customizationData.text}&quot;</p>
+                                        </div>
+                                      );
+                                    }
+                                  } catch {
+                                    if (item.customization) {
+                                      return (
+                                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                          <p className="text-xs font-semibold text-blue-800">📝 Customization:</p>
+                                          <p className="text-sm font-medium text-blue-900">{item.customization}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                  return null;
+                                })()}
                                 <p className="text-sm text-gray-500">
                                   Qty: {item.quantity}
                                 </p>

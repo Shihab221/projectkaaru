@@ -56,6 +56,8 @@ interface Order {
   };
   paymentMethod: string;
   paymentStatus: "pending" | "paid" | "failed";
+  transactionId?: string;
+  notes?: string;
   itemsTotal: number;
   shippingCost: number;
   discount: number;
@@ -489,6 +491,37 @@ export default function AdminOrdersPage() {
                         </p>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Payment Info */}
+                <div>
+                  <h3 className="font-semibold text-secondary mb-3">Payment Information</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Payment Method</span>
+                      <span className="font-medium uppercase">{selectedOrder.paymentMethod}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Payment Status</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${paymentStatusColors[selectedOrder.paymentStatus]}`}>
+                        {selectedOrder.paymentStatus}
+                      </span>
+                    </div>
+                    {selectedOrder.transactionId && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Transaction ID</span>
+                        <span className="font-mono font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">
+                          {selectedOrder.transactionId}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.notes && (
+                      <div className="pt-2 border-t border-gray-200">
+                        <span className="text-gray-500 text-sm">Order Notes:</span>
+                        <p className="text-sm text-secondary mt-1">{selectedOrder.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
