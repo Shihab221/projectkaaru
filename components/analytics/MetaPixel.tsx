@@ -21,7 +21,7 @@ interface MetaPixelProps {
  * 1. Pixel Helper browser extension detection
  * 2. Basic PageView for cookie/browser matching
  * 
- * Automatic Events are DISABLED to prevent false positives like "Subscribe" clicks.
+ * Automatic Events are ENABLED for Meta's automatic event detection.
  */
 export function MetaPixel({ pixelId }: MetaPixelProps) {
   if (!pixelId) {
@@ -45,19 +45,18 @@ export function MetaPixel({ pixelId }: MetaPixelProps) {
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             
-            // Initialize pixel with automatic events DISABLED
+            // Initialize pixel with automatic events ENABLED
             fbq('init', '${pixelId}', {}, {
-              autoConfig: false,
+              autoConfig: true,
               debug: false
             });
             
-            // Disable automatic button click tracking (prevents false "Subscribe" events)
-            fbq('set', 'autoConfig', false, '${pixelId}');
+            fbq('set', 'autoConfig', true, '${pixelId}');
             
             // Only track PageView client-side (all other events go through Conversions API)
             fbq('track', 'PageView');
             
-            console.log('[Meta Pixel] Loaded with ID: ${pixelId} (autoConfig disabled)');
+            console.log('[Meta Pixel] Loaded with ID: ${pixelId} (autoConfig enabled)');
           `,
         }}
       />
