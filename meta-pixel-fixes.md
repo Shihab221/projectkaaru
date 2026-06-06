@@ -1,3 +1,15 @@
+# Meta Pixel & CAPI Fix Instructions
+
+There are **4 files** to change. Follow them in order.
+
+---
+
+## FILE 1 — `lib/analytics.ts`
+### What changes: Forward `fbp`/`fbc` cookies + email to CAPI, and fire `fbq()` client-side for deduplication
+
+Replace the **entire file** with this:
+
+```ts
 /**
  * Meta Pixel (Facebook Conversions API) Client-Side Event Tracking Utility
  *
@@ -296,3 +308,283 @@ export async function trackCompleteRegistration(): Promise<boolean> {
   if (success) fireBrowserPixel('CompleteRegistration', eventId);
   return success;
 }
+```
+
+---
+
+## FILE 2 — `app/api/analytics/track/route.ts`
+### What changes: Accept `fbp`, `fbc`, and `email` from the request body and pass them to CAPI
+
+Replace the **entire file** with this:
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import {
+  trackPageView,
+  trackPurchase,
+  trackAddToCart,
+  trackInitiateCheckout,
+  trackViewContent,
+  trackSearch,
+  trackContact,
+  trackLead,
+  trackCompleteRegistration,
+} from "@/lib/server-analytics";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    // fbp, fbc, and email are now forwarded from the browser
+    const { event, eventId, data, fbp, fbc, email } = body;
+
+    if (!event) {
+      return NextResponse.json(
+        { error: "Event type is required" },
+        { status: 400 }
+      );
+    }
+
+    const url = request.headers.get("referer") || request.url;
+
+    console.log(`[Analytics] Processing ${event} event`, { eventId, data, hasFbp: !!fbp, hasFbc: !!fbc, hasEmail: !!email });
+
+    // Pass fbp/fbc/email into the request so server-analytics can use them
+    // We attach them as custom headers so getUserData() can read them
+    const augmentedRequest = new Request(request.url, {
+      method: request.method,
+      headers: new Headers({
+        ...Object.fromEntries(request.headers.entries()),
+        ...(fbp ? { 'x-fbp': fbp } : {}),
+        ...(fbc ? { 'x-fbc': fbc } : {}),
+        ...(email ? { 'x-user-email': email } : {}),
+      }),
+      body: request.body,
+    });
+
+    let success = false;
+
+    switch (event) {
+      case "PageView":
+        success = await trackPageView(augmentedRequest, url, eventId);
+        break;
+
+      case "Purchase":
+        success = await trackPurchase(
+          augmentedRequest,
+          data.value,
+          data.currency || "BDT",
+          data.contents,
+          url,
+          eventId
+        );
+        break;
+
+      case "AddToCart":
+        const addToCartContentId = data.content_ids?.[0] || data.contentId;
+        success = await trackAddToCart(
+          augmentedRequest,
+          data.value,
+          data.currency || "BDT",
+          addToCartContentId,
+          data.content_name || data.contentName,
+          data.content_category || data.contentCategory,
+          data.quantity || 1,
+          url,
+          eventId
+        );
+        break;
+
+      case "InitiateCheckout":
+        success = await trackInitiateCheckout(
+          augmentedRequest,
+          data.value,
+          data.currency || "BDT",
+          data.contents,
+          url,
+          eventId
+        );
+        break;
+
+      case "ViewContent":
+        const viewContentId = data.content_ids?.[0] || data.contentId;
+        success = await trackViewContent(
+          augmentedRequest,
+          viewContentId,
+          data.content_name || data.contentName,
+          data.content_category || data.contentCategory,
+          data.value,
+          data.currency || "BDT",
+          url,
+          eventId
+        );
+        break;
+
+      case "Search":
+        success = await trackSearch(
+          augmentedRequest,
+          data.search_string || data.searchString,
+          data.content_ids || data.contentIds,
+          url,
+          eventId
+        );
+        break;
+
+      case "Contact":
+        success = await trackContact(augmentedRequest, url, eventId);
+        break;
+
+      case "Lead":
+        success = await trackLead(augmentedRequest, url, eventId);
+        break;
+
+      case "CompleteRegistration":
+        success = await trackCompleteRegistration(augmentedRequest, url, eventId);
+        break;
+
+      default:
+        return NextResponse.json(
+          { error: `Unknown event type: ${event}` },
+          { status: 400 }
+        );
+    }
+
+    if (success) {
+      return NextResponse.json({
+        success: true,
+        message: `${event} event tracked successfully`,
+        eventId,
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Failed to track event" },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("Error in analytics API:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## FILE 3 — `lib/server-analytics.ts`
+### What changes: Read `fbp`/`fbc` from custom headers + hash email with SHA-256
+
+Find the `getUserData` function (around line 34) and replace **just that function** with this:
+
+```ts
+/**
+ * Hash a string with SHA-256 (required by Meta for PII like email)
+ */
+async function hashSHA256(value: string): Promise<string> {
+  const normalized = value.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Get user data from request for Conversions API
+ * Reads fbp/fbc from custom forwarded headers (set by track/route.ts)
+ * and falls back to request cookies
+ */
+async function getUserData(request: Request): Promise<MetaEventData['user_data']> {
+  const headers = new Headers(request.headers);
+  const userAgent = headers.get('user-agent');
+  const ip =
+    headers.get('x-forwarded-for') ||
+    headers.get('x-real-ip') ||
+    headers.get('cf-connecting-ip') ||
+    '127.0.0.1';
+
+  // First try the forwarded headers from the browser (most reliable)
+  let fbp = headers.get('x-fbp') || '';
+  let fbc = headers.get('x-fbc') || '';
+  const rawEmail = headers.get('x-user-email') || '';
+
+  // Fallback: read directly from request cookies
+  if (!fbp || !fbc) {
+    const cookieHeader = headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      if (!fbp) fbp = cookies['_fbp'] || '';
+      if (!fbc) fbc = cookies['_fbc'] || '';
+    }
+  }
+
+  // Hash email if provided (Meta requires SHA-256 hashed PII)
+  const hashedEmail = rawEmail ? await hashSHA256(rawEmail) : undefined;
+
+  return {
+    client_ip_address: ip,
+    client_user_agent: userAgent || '',
+    fbc: fbc || undefined,
+    fbp: fbp || undefined,
+    email: hashedEmail,
+  };
+}
+```
+
+> ⚠️ **Important:** Because `getUserData` is now `async`, you also need to update every function that calls it.
+> Find all lines like:
+> ```ts
+> user_data: getUserData(request),
+> ```
+> And change them to:
+> ```ts
+> user_data: await getUserData(request),
+> ```
+> There are about **8 places** in the file — do a find & replace for `getUserData(request)` → `await getUserData(request)`.
+
+---
+
+## FILE 4 — `app/checkout/page.tsx`
+### What changes: Pass `formData.email` to `trackPurchase` and `trackInitiateCheckout`
+
+**Change 1** — `trackInitiateCheckout` call (around line 175):
+
+Find:
+```ts
+      trackInitiateCheckout(checkoutTotal, "BDT", contents);
+```
+
+Replace with:
+```ts
+      trackInitiateCheckout(checkoutTotal, "BDT", contents, formData.email);
+```
+
+---
+
+**Change 2** — `trackPurchase` call (around line 351):
+
+Find:
+```ts
+      trackPurchase(total, "BDT", contents);
+```
+
+Replace with:
+```ts
+      trackPurchase(parseFloat(total.toFixed(2)), "BDT", contents, formData.email);
+```
+
+---
+
+## That's it! Summary of what each change does
+
+| File | What it fixes |
+|---|---|
+| `lib/analytics.ts` | Pixel now fires browser-side `fbq()` for every event with matching `event_id` for deduplication. Also forwards `fbp`/`fbc` cookies to server. |
+| `app/api/analytics/track/route.ts` | Passes `fbp`, `fbc`, and `email` from the request body into the CAPI call. |
+| `lib/server-analytics.ts` | Reads forwarded `fbp`/`fbc` headers, falls back to cookies. Hashes email with SHA-256 before sending to Meta. |
+| `app/checkout/page.tsx` | Passes customer email to Purchase and InitiateCheckout events. Ensures `total` is a clean number. |
