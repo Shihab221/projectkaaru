@@ -20,8 +20,6 @@ interface MetaPixelProps {
  * server-side via the Conversions API. This client-side pixel is only for:
  * 1. Pixel Helper browser extension detection
  * 2. Basic PageView for cookie/browser matching
- * 
- * Automatic Events are ENABLED for Meta's automatic event detection.
  */
 export function MetaPixel({ pixelId }: MetaPixelProps) {
   if (!pixelId) {
@@ -45,18 +43,10 @@ export function MetaPixel({ pixelId }: MetaPixelProps) {
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             
-            // Initialize pixel with automatic events ENABLED
-            fbq('init', '${pixelId}', {}, {
-              autoConfig: true,
-              debug: false
-            });
-            
-            fbq('set', 'autoConfig', true, '${pixelId}');
-            
-            // Only track PageView client-side (all other events go through Conversions API)
+            fbq('init', '${pixelId}');
             fbq('track', 'PageView');
             
-            console.log('[Meta Pixel] Loaded with ID: ${pixelId} (autoConfig enabled)');
+            console.log('[Meta Pixel] Loaded with ID: ${pixelId}');
           `,
         }}
       />
