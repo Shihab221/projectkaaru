@@ -85,22 +85,7 @@ npm install
 
 Create a `.env.local` file:
 ```env
-# Database (PostgreSQL)
-DATABASE_URL="postgresql://username:password@localhost:5432/projectkaru"
-DIRECT_URL="postgresql://username:password@localhost:5432/projectkaru"
 
-# JWT Secret (generate a random string)
-JWT_SECRET=your-super-secret-jwt-key
-
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# WhatsApp Number
-NEXT_PUBLIC_WHATSAPP_NUMBER=8801712345678
-
-# Meta Pixel (Facebook Pixel) ID
-NEXT_PUBLIC_META_PIXEL_ID=2398720360548171
-```
 
 4. **Seed the database (optional)**
 ```bash
