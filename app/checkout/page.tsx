@@ -21,12 +21,14 @@ import {
   selectCartTotal,
   selectCartItemsCount,
   clearCart,
+  type CartItem,
 } from "@/redux/slices/cartSlice";
 import { selectIsAuthenticated, selectAuthInitialized } from "@/redux/slices/authSlice";
 import { formatPrice } from "@/lib/utils";
 import {
   KEYCHAIN_COLORS,
   DELIVERY_OPTIONS,
+  PAYMENT_ACCOUNTS,
   type DeliveryZone,
   getShippingCostForZone,
 } from "@/lib/constants";
@@ -48,10 +50,11 @@ interface CheckoutForm {
   country: string;
   // Payment
   paymentMethod: "cod" | "bkash" | "nagad";
+  codPrepaymentMethod: "bkash" | "nagad";
   transactionId: string;
   notes: string;
   // Customization
-  customizations: Record<string, string>; // itemId -> customization text
+  customizations: Record<string, string>; // unique key per keychain unit -> customization text
   // Delivery
   deliveryZone: DeliveryZone;
 }
@@ -60,7 +63,7 @@ const paymentMethods = [
   {
     id: "cod" as const,
     name: "Cash on Delivery",
-    description: "Pay when you receive your order",
+    description: "Pay delivery charge now via bKash/Nagad; pay for items on delivery",
     icon: Truck,
   },
   {
@@ -76,6 +79,36 @@ const paymentMethods = [
     icon: CreditCard,
   },
 ];
+
+/** Unique key per cart line (same product with different colors = different lines). */
+function getCartLineKey(item: CartItem): string {
+  return [
+    item.id,
+    item.size ?? "",
+    item.selectedBackgroundColor ?? "",
+    item.selectedBorderColor ?? "",
+  ].join("::");
+}
+
+function getKeychainCustomizationKey(item: CartItem, unitIndex: number): string {
+  return `${getCartLineKey(item)}::${unitIndex}`;
+}
+
+function getKeychainUnitFields(items: CartItem[]) {
+  return items
+    .filter((item) => item.customization?.type === "keychain_text")
+    .flatMap((item) =>
+      Array.from({ length: item.quantity }, (_, unitIndex) => ({
+        key: getKeychainCustomizationKey(item, unitIndex),
+        item,
+        unitIndex,
+        label:
+          item.quantity > 1
+            ? `${item.name} (#${unitIndex + 1})`
+            : item.name,
+      }))
+    );
+}
 
 function CheckoutPageContent() {
   const router = useRouter();
@@ -98,6 +131,7 @@ function CheckoutPageContent() {
     postalCode: "",
     country: "Bangladesh",
     paymentMethod: "cod",
+    codPrepaymentMethod: "bkash",
     transactionId: "",
     notes: "",
     customizations: {},
@@ -205,7 +239,6 @@ function CheckoutPageContent() {
     setFormData((prev) => ({
       ...prev,
       paymentMethod: method,
-      transactionId: method === "cod" ? "" : prev.transactionId,
     }));
   };
 
@@ -251,25 +284,25 @@ function CheckoutPageContent() {
       return;
     }
 
-    // Validate transaction ID for mobile payments
-    if (formData.paymentMethod !== "cod" && !formData.transactionId.trim()) {
-      toast.error("Please enter transaction ID for mobile payments");
+    // Validate transaction ID (required for all payment methods)
+    if (!formData.transactionId.trim()) {
+      if (formData.paymentMethod === "cod") {
+        toast.error("Please enter transaction ID for delivery charge payment");
+      } else {
+        toast.error("Please enter transaction ID for mobile payments");
+      }
       return;
     }
 
-    // Validate keychain customizations
-    const keychainItems = cartItems.filter(item =>
-      item.customization?.type === "keychain_text"
-    );
-
-    for (const item of keychainItems) {
-      const customizationText = formData.customizations[item.id];
+    // Validate keychain customizations (one text per keychain unit)
+    for (const { key, label } of getKeychainUnitFields(cartItems)) {
+      const customizationText = formData.customizations[key];
       if (!customizationText || !customizationText.trim()) {
-        toast.error(`Please enter customization text for ${item.name}`);
+        toast.error(`Please enter customization text for ${label}`);
         return;
       }
       if (customizationText.length > 100) {
-        toast.error(`Customization text for ${item.name} must be 100 characters or less`);
+        toast.error(`Customization text for ${label} must be 100 characters or less`);
         return;
       }
     }
@@ -280,6 +313,9 @@ function CheckoutPageContent() {
       DELIVERY_OPTIONS.find((o) => o.id === formData.deliveryZone)?.label ??
       formData.deliveryZone;
     const notesWithDelivery = [
+      formData.paymentMethod === "cod"
+        ? `Delivery charge prepaid via ${formData.codPrepaymentMethod}`
+        : null,
       `Delivery: ${deliveryLabel}`,
       formData.notes.trim(),
     ]
@@ -288,24 +324,41 @@ function CheckoutPageContent() {
 
     try {
       const orderData = {
-        items: cartItems.map((item) => ({
-          product: item.id, // Use item.id instead of item._id
-          name: item.name,
-          image: item.image,
-          price: item.discountedPrice || item.price,
-          quantity: item.quantity,
-          size: item.size,
-          backgroundColor: item.selectedBackgroundColor,
-          borderColor: item.selectedBorderColor,
-          customization: item.customization?.type === "keychain_text"
-            ? JSON.stringify({
+        items: cartItems.flatMap((item) => {
+          const baseItem = {
+            product: item.id,
+            name: item.name,
+            image: item.image,
+            price: item.discountedPrice || item.price,
+            size: item.size,
+            backgroundColor: item.selectedBackgroundColor,
+            borderColor: item.selectedBorderColor,
+          };
+
+          if (item.customization?.type === "keychain_text") {
+            return Array.from({ length: item.quantity }, (_, unitIndex) => ({
+              ...baseItem,
+              quantity: 1,
+              customization: JSON.stringify({
                 type: "keychain_text",
-                text: formData.customizations[item.id]?.trim() || ""
-              })
-            : item.customization
-              ? JSON.stringify(item.customization)
-              : null,
-        })),
+                text:
+                  formData.customizations[
+                    getKeychainCustomizationKey(item, unitIndex)
+                  ]?.trim() || "",
+              }),
+            }));
+          }
+
+          return [
+            {
+              ...baseItem,
+              quantity: item.quantity,
+              customization: item.customization
+                ? JSON.stringify(item.customization)
+                : null,
+            },
+          ];
+        }),
         shippingAddress: {
           name: formData.name,
           phone: formData.phone,
@@ -651,40 +704,74 @@ function CheckoutPageContent() {
                 ))}
               </div>
 
-              {/* Mobile Payment Instructions */}
-              {(formData.paymentMethod === "bkash" ||
-                formData.paymentMethod === "nagad") && (
+              {/* COD: delivery charge prepayment */}
+              {formData.paymentMethod === "cod" && (
                 <div className="mt-4 space-y-4">
-                  {/* Account Information */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm text-amber-900">
+                      To confirm your Cash on Delivery order, pay the delivery charge (
+                      {formatPrice(shippingCost)}) via bKash or Nagad. You will pay for the
+                      items when you receive your order.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-secondary">
+                      Pay delivery charge via *
+                    </p>
+                    {(["bkash", "nagad"] as const).map((method) => (
+                      <label
+                        key={method}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          formData.codPrepaymentMethod === method
+                            ? "border-primary bg-primary/5"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="codPrepaymentMethod"
+                          value={method}
+                          checked={formData.codPrepaymentMethod === method}
+                          onChange={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              codPrepaymentMethod: method,
+                            }))
+                          }
+                          className="w-4 h-4 text-primary focus:ring-primary"
+                        />
+                        <CreditCard className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-secondary capitalize">{method}</p>
+                          <p className="text-sm text-gray-500">
+                            Send {formatPrice(shippingCost)} to {PAYMENT_ACCOUNTS[method]}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                      {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Payment Details
+                      {formData.codPrepaymentMethod === "bkash" ? "bKash" : "Nagad"} Payment Details
                     </h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-700">
-                          {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Number:
-                        </span>
+                        <span className="text-sm font-medium text-blue-700">Number:</span>
                         <span className="text-lg font-bold text-blue-800">
-                          {formData.paymentMethod === "bkash" ? "01776603125" : "01608144956"}
+                          {PAYMENT_ACCOUNTS[formData.codPrepaymentMethod]}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-700">Amount:</span>
+                        <span className="text-sm font-medium text-blue-700">Delivery charge:</span>
                         <span className="text-lg font-bold text-blue-800">
-                          ৳{total.toFixed(2)}
+                          {formatPrice(shippingCost)}
                         </span>
                       </div>
                     </div>
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                      <p className="text-sm text-yellow-800">
-                        📱 Send the exact amount (৳{total.toFixed(2)}) to the above {formData.paymentMethod} number.
-                        After successful payment, enter the Transaction ID below.
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Transaction ID Input */}
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-1.5">
                       Transaction ID *
@@ -699,7 +786,62 @@ function CheckoutPageContent() {
                       required
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter the transaction ID from your {formData.paymentMethod} payment confirmation SMS
+                      Enter the transaction ID from your {formData.codPrepaymentMethod} payment
+                      confirmation SMS
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Full mobile payment (bKash / Nagad) */}
+              {(formData.paymentMethod === "bkash" ||
+                formData.paymentMethod === "nagad") && (
+                <div className="mt-4 space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                      {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Payment Details
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">
+                          {formData.paymentMethod === "bkash" ? "bKash" : "Nagad"} Number:
+                        </span>
+                        <span className="text-lg font-bold text-blue-800">
+                          {PAYMENT_ACCOUNTS[formData.paymentMethod]}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">Amount:</span>
+                        <span className="text-lg font-bold text-blue-800">
+                          ৳{total.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm text-yellow-800">
+                        📱 Send the exact amount (৳{total.toFixed(2)}) to the above{" "}
+                        {formData.paymentMethod} number. After successful payment, enter the
+                        Transaction ID below.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1.5">
+                      Transaction ID *
+                    </label>
+                    <input
+                      type="text"
+                      name="transactionId"
+                      value={formData.transactionId}
+                      onChange={handleInputChange}
+                      className="input"
+                      placeholder="Enter transaction ID"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the transaction ID from your {formData.paymentMethod} payment
+                      confirmation SMS
                     </p>
                   </div>
                 </div>
@@ -832,10 +974,8 @@ function CheckoutPageContent() {
                       Keychain Customizations Required
                     </h3>
                     <div className="space-y-3">
-                      {cartItems
-                        .filter(item => item.customization?.type === "keychain_text")
-                        .map((item) => (
-                          <div key={item.id} className="bg-white rounded-md p-3 border border-blue-300">
+                      {getKeychainUnitFields(cartItems).map(({ key, item, label }) => (
+                          <div key={key} className="bg-white rounded-md p-3 border border-blue-300">
                             <div className="flex items-center gap-3 mb-2">
                               <img
                                 src={item.image}
@@ -843,8 +983,7 @@ function CheckoutPageContent() {
                                 className="w-8 h-8 rounded object-cover"
                               />
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                <p className="text-sm font-medium text-gray-900">{label}</p>
                               </div>
                             </div>
                             <div>
@@ -856,14 +995,14 @@ function CheckoutPageContent() {
                               </div>
                               <input
                                 type="text"
-                                value={formData.customizations[item.id] || ""}
+                                value={formData.customizations[key] || ""}
                                 onChange={(e) => {
                                   const value = e.target.value.slice(0, 100);
                                   setFormData(prev => ({
                                     ...prev,
                                     customizations: {
                                       ...prev.customizations,
-                                      [item.id]: value
+                                      [key]: value
                                     }
                                   }));
                                 }}
@@ -873,7 +1012,7 @@ function CheckoutPageContent() {
                                 required
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                {(formData.customizations[item.id] || "").length}/100 characters
+                                {(formData.customizations[key] || "").length}/100 characters
                               </p>
                             </div>
                           </div>

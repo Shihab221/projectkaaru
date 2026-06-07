@@ -331,13 +331,27 @@ export default function AdminOrdersPage() {
                           </span>
                         </td>
                         <td className="py-4 px-6">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              paymentStatusColors[order.paymentStatus]
-                            }`}
-                          >
-                            {order.paymentStatus}
-                          </span>
+                          <div>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                paymentStatusColors[order.paymentStatus]
+                              }`}
+                            >
+                              {order.paymentStatus}
+                            </span>
+                            <p className="text-xs text-gray-500 uppercase mt-1">
+                              {order.paymentMethod}
+                            </p>
+                            <p
+                              className={`text-xs font-mono mt-0.5 ${
+                                order.transactionId
+                                  ? "text-green-700"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              TXN: {order.transactionId || "—"}
+                            </p>
+                          </div>
                         </td>
                         <td className="py-4 px-6">
                           <span
@@ -508,14 +522,18 @@ export default function AdminOrdersPage() {
                         {selectedOrder.paymentStatus}
                       </span>
                     </div>
-                    {selectedOrder.transactionId && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Transaction ID</span>
-                        <span className="font-mono font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">
-                          {selectedOrder.transactionId}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Transaction ID</span>
+                      <span
+                        className={`font-mono font-medium px-2 py-0.5 rounded ${
+                          selectedOrder.transactionId
+                            ? "text-green-700 bg-green-50"
+                            : "text-gray-400 bg-gray-100"
+                        }`}
+                      >
+                        {selectedOrder.transactionId || "Not provided"}
+                      </span>
+                    </div>
                     {selectedOrder.notes && (
                       <div className="pt-2 border-t border-gray-200">
                         <span className="text-gray-500 text-sm">Order Notes:</span>

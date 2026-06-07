@@ -61,6 +61,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!transactionId || typeof transactionId !== "string" || !transactionId.trim()) {
+      return NextResponse.json(
+        { error: "Transaction ID is required to confirm the order" },
+        { status: 400 }
+      );
+    }
+
     // Use Prisma transaction to ensure data consistency with increased timeout
     const result = await prisma.$transaction(async (tx) => {
       // First, validate stock for all items in one query
@@ -187,7 +194,7 @@ export async function POST(request: NextRequest) {
           total,
           status: "pending",
           notes,
-          transactionId: transactionId || null,
+          transactionId: transactionId.trim(),
           shippingAddress: {
             create: {
               name: shippingAddress.name,

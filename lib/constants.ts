@@ -131,6 +131,11 @@ export function getShippingCostForZone(zone: DeliveryZone): number {
   return DELIVERY_SHIPPING_COSTS[zone];
 }
 
+export const PAYMENT_ACCOUNTS = {
+  bkash: "01776603125",
+  nagad: "01608144956",
+} as const;
+
 // Pagination
 export const PRODUCTS_PER_PAGE = 12;
 export const ORDERS_PER_PAGE = 10;
