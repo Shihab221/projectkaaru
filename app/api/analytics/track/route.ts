@@ -14,8 +14,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    // fbp, fbc, and email are now forwarded from the browser
-    const { event, eventId, data, fbp, fbc, email } = body;
+    const { event, eventId, data } = body;
 
     if (!event) {
       return NextResponse.json(
@@ -24,47 +23,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const url = request.headers.get("referer") || request.url;
+    // Get the full URL for the event
+    const url = request.headers.get('referer') || request.url;
 
-    console.log(`[Analytics] Processing ${event} event`, { eventId, data, hasFbp: !!fbp, hasFbc: !!fbc, hasEmail: !!email });
-
-    // Pass fbp/fbc/email into the request so server-analytics can use them
-    // We attach them as custom headers so getUserData() can read them
-    const augmentedRequest = new Request(request.url, {
-      method: request.method,
-      headers: new Headers({
-        ...Object.fromEntries(request.headers.entries()),
-        ...(fbp ? { 'x-fbp': fbp } : {}),
-        ...(fbc ? { 'x-fbc': fbc } : {}),
-        ...(email ? { 'x-user-email': email } : {}),
-      }),
-      body: request.body,
-    });
+    console.log(`[Analytics] Processing ${event} event`, { eventId, data });
 
     let success = false;
 
     switch (event) {
-      case "PageView":
-        success = await trackPageView(augmentedRequest, url, eventId);
+      case 'PageView':
+        success = await trackPageView(request, url, eventId);
         break;
 
-      case "Purchase":
+      case 'Purchase':
         success = await trackPurchase(
-          augmentedRequest,
+          request,
           data.value,
-          data.currency || "BDT",
+          data.currency || 'BDT',
           data.contents,
           url,
           eventId
         );
         break;
 
-      case "AddToCart":
+      case 'AddToCart':
+        // Handle both content_ids array and contentId singular
         const addToCartContentId = data.content_ids?.[0] || data.contentId;
         success = await trackAddToCart(
-          augmentedRequest,
+          request,
           data.value,
-          data.currency || "BDT",
+          data.currency || 'BDT',
           addToCartContentId,
           data.content_name || data.contentName,
           data.content_category || data.contentCategory,
@@ -74,34 +62,35 @@ export async function POST(request: NextRequest) {
         );
         break;
 
-      case "InitiateCheckout":
+      case 'InitiateCheckout':
         success = await trackInitiateCheckout(
-          augmentedRequest,
+          request,
           data.value,
-          data.currency || "BDT",
+          data.currency || 'BDT',
           data.contents,
           url,
           eventId
         );
         break;
 
-      case "ViewContent":
+      case 'ViewContent':
+        // Handle both content_ids array and contentId singular
         const viewContentId = data.content_ids?.[0] || data.contentId;
         success = await trackViewContent(
-          augmentedRequest,
+          request,
           viewContentId,
           data.content_name || data.contentName,
           data.content_category || data.contentCategory,
           data.value,
-          data.currency || "BDT",
+          data.currency || 'BDT',
           url,
           eventId
         );
         break;
 
-      case "Search":
+      case 'Search':
         success = await trackSearch(
-          augmentedRequest,
+          request,
           data.search_string || data.searchString,
           data.content_ids || data.contentIds,
           url,
@@ -109,16 +98,16 @@ export async function POST(request: NextRequest) {
         );
         break;
 
-      case "Contact":
-        success = await trackContact(augmentedRequest, url, eventId);
+      case 'Contact':
+        success = await trackContact(request, url, eventId);
         break;
 
-      case "Lead":
-        success = await trackLead(augmentedRequest, url, eventId);
+      case 'Lead':
+        success = await trackLead(request, url, eventId);
         break;
 
-      case "CompleteRegistration":
-        success = await trackCompleteRegistration(augmentedRequest, url, eventId);
+      case 'CompleteRegistration':
+        success = await trackCompleteRegistration(request, url, eventId);
         break;
 
       default:

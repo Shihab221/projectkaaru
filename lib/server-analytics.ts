@@ -29,59 +29,37 @@ interface MetaConversionsAPIRequest {
 }
 
 /**
- * Hash a string with SHA-256 (required by Meta for PII like email)
- */
-async function hashSHA256(value: string): Promise<string> {
-  const normalized = value.trim().toLowerCase();
-  const encoder = new TextEncoder();
-  const data = encoder.encode(normalized);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
  * Get user data from request for Conversions API
- * Reads fbp/fbc from custom forwarded headers (set by track/route.ts)
- * and falls back to request cookies
  */
-async function getUserData(request: Request): Promise<MetaEventData['user_data']> {
+function getUserData(request: Request): MetaEventData['user_data'] {
   const headers = new Headers(request.headers);
   const userAgent = headers.get('user-agent');
-  const ip =
-    headers.get('x-forwarded-for') ||
-    headers.get('x-real-ip') ||
-    headers.get('cf-connecting-ip') ||
-    '127.0.0.1';
+  const ip = headers.get('x-forwarded-for') ||
+            headers.get('x-real-ip') ||
+            headers.get('cf-connecting-ip') ||
+            '127.0.0.1';
 
-  // First try the forwarded headers from the browser (most reliable)
-  let fbp = headers.get('x-fbp') || '';
-  let fbc = headers.get('x-fbc') || '';
-  const rawEmail = headers.get('x-user-email') || '';
+  // Get fbc and fbp from cookies if available
+  const cookieHeader = headers.get('cookie');
+  let fbc = '';
+  let fbp = '';
 
-  // Fallback: read directly from request cookies
-  if (!fbp || !fbc) {
-    const cookieHeader = headers.get('cookie');
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {} as Record<string, string>);
-      if (!fbp) fbp = cookies['_fbp'] || '';
-      if (!fbc) fbc = cookies['_fbc'] || '';
-    }
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    fbc = cookies['_fbc'] || '';
+    fbp = cookies['_fbp'] || '';
   }
-
-  // Hash email if provided (Meta requires SHA-256 hashed PII)
-  const hashedEmail = rawEmail ? await hashSHA256(rawEmail) : undefined;
 
   return {
     client_ip_address: ip,
     client_user_agent: userAgent || '',
     fbc: fbc || undefined,
     fbp: fbp || undefined,
-    email: hashedEmail,
   };
 }
 
@@ -128,7 +106,6 @@ async function sendToMetaAPI(eventData: MetaEventData): Promise<boolean> {
       event_id: eventData.event_id,
       event_time: eventData.event_time,
       custom_data: eventData.custom_data,
-      user_data_keys: eventData.user_data ? Object.keys(eventData.user_data).filter(k => eventData.user_data![k as keyof typeof eventData.user_data]) : [],
     });
 
     const response = await fetch(apiUrl, {
@@ -174,7 +151,7 @@ export async function trackPageView(request: Request, url?: string, eventId?: st
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
   };
 
   return await sendToMetaAPI(eventData);
@@ -215,7 +192,7 @@ export async function trackPurchase(
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
     custom_data: customData,
   };
 
@@ -255,7 +232,7 @@ export async function trackAddToCart(
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
     custom_data: customData,
   };
 
@@ -299,7 +276,7 @@ export async function trackInitiateCheckout(
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
     custom_data: customData,
   };
 
@@ -337,7 +314,7 @@ export async function trackViewContent(
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
     custom_data: customData,
   };
 
@@ -369,7 +346,7 @@ export async function trackSearch(
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
     custom_data: customData,
   };
 
@@ -386,7 +363,7 @@ export async function trackContact(request: Request, url?: string, eventId?: str
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
   };
 
   return await sendToMetaAPI(eventData);
@@ -402,7 +379,7 @@ export async function trackLead(request: Request, url?: string, eventId?: string
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
   };
 
   return await sendToMetaAPI(eventData);
@@ -418,7 +395,7 @@ export async function trackCompleteRegistration(request: Request, url?: string, 
     event_id: eventId,
     event_source_url: url,
     action_source: 'website',
-    user_data: await getUserData(request),
+    user_data: getUserData(request),
   };
 
   return await sendToMetaAPI(eventData);

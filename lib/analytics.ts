@@ -1,18 +1,18 @@
 /**
- * Meta Pixel (Facebook Conversions API) Client-Side Event Tracking Utility
+ * Meta Pixel (Facebook Conversions API) Server-Side Event Tracking Utility
  *
- * Each function does TWO things:
- * 1. Fires fbq() in the browser (for Pixel deduplication)
- * 2. Sends the same event + event_id to the server (CAPI)
+ * This handles server-side event tracking using Meta's Conversions API
+ * instead of client-side browser tracking.
  *
- * Both use the same event_id so Meta can deduplicate them.
+ * Use these functions to track standard e-commerce events:
+ * - trackPageView() - Automatically tracked on page load
+ * - trackPurchase() - When order is completed
+ * - trackAddToCart() - When item added to cart
+ * - trackInitiateCheckout() - When checkout starts
+ * - trackViewContent() - When product page viewed
+ * - trackSearch() - When user searches
+ * - trackContact() - When user submits contact form
  */
-
-declare global {
-  interface Window {
-    fbq: (...args: any[]) => void;
-  }
-}
 
 /**
  * Generate unique event ID for deduplication between client and server events
@@ -22,39 +22,20 @@ function generateEventId(): string {
 }
 
 /**
- * Read a browser cookie by name
+ * Send event to server-side tracking API
  */
-function getCookie(name: string): string {
-  if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : '';
-}
-
-/**
- * Send event to server-side tracking API (CAPI)
- * Also forwards fbp, fbc, and optional email for better match quality
- */
-async function sendEventToServer(
-  eventName: string,
-  eventData?: Record<string, any>,
-  email?: string
-): Promise<{ success: boolean; eventId: string }> {
-  const eventId = generateEventId();
-
-  // Read Meta cookies from browser to forward to server
-  const fbp = getCookie('_fbp');
-  const fbc = getCookie('_fbc');
-
+async function sendEventToServer(eventName: string, eventData?: Record<string, any>): Promise<boolean> {
   try {
+    const eventId = generateEventId();
+    
     const response = await fetch('/api/analytics/track', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         event: eventName,
         eventId,
-        fbp: fbp || undefined,
-        fbc: fbc || undefined,
-        email: email || undefined,
         data: eventData || {},
       }),
     });
@@ -62,110 +43,78 @@ async function sendEventToServer(
     if (!response.ok) {
       const errorData = await response.json();
       console.error(`Failed to track ${eventName} event:`, errorData.error);
-      return { success: false, eventId };
+      return false;
     }
 
     const result = await response.json();
-    console.log(`${eventName} event tracked (eventId: ${eventId}):`, result.message);
-    return { success: true, eventId };
+    console.log(`${eventName} event tracked successfully (eventId: ${eventId}):`, result.message);
+    return true;
   } catch (error) {
     console.error(`Error sending ${eventName} event to server:`, error);
-    return { success: false, eventId };
+    return false;
   }
 }
 
 /**
- * Fire the same event on the browser-side Pixel using the same event_id
- * This enables Meta to deduplicate between Pixel and CAPI
+ * Track PageView (automatically tracked, but can be called manually)
  */
-function fireBrowserPixel(
-  eventName: string,
-  eventId: string,
-  params?: Record<string, any>
-): void {
-  if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-    window.fbq('track', eventName, params || {}, { eventID: eventId });
-    console.log(`[Meta Pixel] Browser fired: ${eventName} (eventId: ${eventId})`);
-  }
-}
-
-// ─────────────────────────────────────────────
-// PUBLIC TRACKING FUNCTIONS
-// ─────────────────────────────────────────────
-
 export async function trackPageView(): Promise<boolean> {
-  const { success, eventId } = await sendEventToServer('PageView');
-  if (success) fireBrowserPixel('PageView', eventId);
-  return success;
+  return await sendEventToServer("PageView");
 }
 
 /**
- * Track Purchase event
- * @param value        - Order total
- * @param currency     - Currency code (default: BDT)
- * @param contents     - Array of purchased items
- * @param email        - Customer email (improves match quality)
+ * Track Purchase event - Call when order is completed
+ * @param value - Order total amount
+ * @param currency - Currency code (default: BDT)
+ * @param contents - Array of purchased items
  */
 export async function trackPurchase(
   value: number,
-  currency: string = 'BDT',
+  currency: string = "BDT",
   contents?: Array<{
     id: string;
     name: string;
     category?: string;
     quantity: number;
     item_price: number;
-  }>,
-  email?: string
+  }>
 ): Promise<boolean> {
   const eventData: Record<string, any> = {
-    value: parseFloat(value.toFixed(2)),  // Ensure clean number, fixes "same price" warning
+    value,
     currency,
   };
 
   if (contents && contents.length > 0) {
     eventData.contents = contents;
     eventData.content_ids = contents.map((item) => item.id);
-    eventData.content_type = 'product';
+    eventData.content_type = "product";
     eventData.num_items = contents.reduce((sum, item) => sum + item.quantity, 0);
   }
 
-  const { success, eventId } = await sendEventToServer('Purchase', eventData, email);
-
-  if (success) {
-    fireBrowserPixel('Purchase', eventId, {
-      value: eventData.value,
-      currency,
-      content_ids: eventData.content_ids,
-      content_type: 'product',
-      num_items: eventData.num_items,
-    });
-  }
-
-  return success;
+  return await sendEventToServer("Purchase", eventData);
 }
 
 /**
- * Track AddToCart event
- * @param value           - Item total price
- * @param currency        - Currency code (default: BDT)
- * @param contentId       - Product ID
- * @param contentName     - Product name
+ * Track AddToCart event - Call when item is added to cart
+ * @param value - Item price
+ * @param currency - Currency code (default: BDT)
+ * @param contentId - Product ID
+ * @param contentName - Product name
  * @param contentCategory - Product category
- * @param quantity        - Quantity added
+ * @param quantity - Quantity added
  */
 export async function trackAddToCart(
   value: number,
-  currency: string = 'BDT',
+  currency: string = "BDT",
   contentId?: string,
   contentName?: string,
   contentCategory?: string,
   quantity: number = 1
 ): Promise<boolean> {
   const eventData: Record<string, any> = {
-    value: parseFloat(value.toFixed(2)),
+    value,
     currency,
-    content_type: 'product',
+    content_type: "product",
     quantity,
   };
 
@@ -173,126 +122,104 @@ export async function trackAddToCart(
   if (contentName) eventData.content_name = contentName;
   if (contentCategory) eventData.content_category = contentCategory;
 
-  const { success, eventId } = await sendEventToServer('AddToCart', eventData);
-
-  if (success) {
-    fireBrowserPixel('AddToCart', eventId, {
-      value: eventData.value,
-      currency,
-      content_ids: eventData.content_ids,
-      content_type: 'product',
-    });
-  }
-
-  return success;
+  return await sendEventToServer("AddToCart", eventData);
 }
 
 /**
- * Track InitiateCheckout event
- * @param value    - Cart total
+ * Track InitiateCheckout event - Call when user starts checkout
+ * @param value - Cart total
  * @param currency - Currency code (default: BDT)
- * @param contents - Cart items
- * @param email    - Customer email (improves match quality)
+ * @param contents - Array of items in cart
  */
 export async function trackInitiateCheckout(
   value: number,
-  currency: string = 'BDT',
+  currency: string = "BDT",
   contents?: Array<{
     id: string;
     name: string;
     category?: string;
     quantity: number;
     item_price: number;
-  }>,
-  email?: string
+  }>
 ): Promise<boolean> {
   const eventData: Record<string, any> = {
-    value: parseFloat(value.toFixed(2)),
+    value,
     currency,
   };
 
   if (contents && contents.length > 0) {
     eventData.contents = contents;
     eventData.content_ids = contents.map((item) => item.id);
-    eventData.content_type = 'product';
+    eventData.content_type = "product";
     eventData.num_items = contents.reduce((sum, item) => sum + item.quantity, 0);
   }
 
-  const { success, eventId } = await sendEventToServer('InitiateCheckout', eventData, email);
-
-  if (success) {
-    fireBrowserPixel('InitiateCheckout', eventId, {
-      value: eventData.value,
-      currency,
-      content_ids: eventData.content_ids,
-      num_items: eventData.num_items,
-    });
-  }
-
-  return success;
+  return await sendEventToServer("InitiateCheckout", eventData);
 }
 
 /**
- * Track ViewContent event
+ * Track ViewContent event - Call when product page is viewed
+ * @param contentId - Product ID
+ * @param contentName - Product name
+ * @param contentCategory - Product category
+ * @param value - Product price
+ * @param currency - Currency code (default: BDT)
  */
 export async function trackViewContent(
   contentId?: string,
   contentName?: string,
   contentCategory?: string,
   value?: number,
-  currency: string = 'BDT'
+  currency: string = "BDT"
 ): Promise<boolean> {
   const eventData: Record<string, any> = {
-    content_type: 'product',
+    content_type: "product",
     currency,
   };
 
   if (contentId) eventData.content_ids = [contentId];
   if (contentName) eventData.content_name = contentName;
   if (contentCategory) eventData.content_category = contentCategory;
-  if (value !== undefined) eventData.value = parseFloat(value.toFixed(2));
+  if (value !== undefined) eventData.value = value;
 
-  const { success, eventId } = await sendEventToServer('ViewContent', eventData);
-
-  if (success) {
-    fireBrowserPixel('ViewContent', eventId, {
-      content_ids: eventData.content_ids,
-      content_name: contentName,
-      content_type: 'product',
-      value: eventData.value,
-      currency,
-    });
-  }
-
-  return success;
+  return await sendEventToServer("ViewContent", eventData);
 }
 
+/**
+ * Track Search event - Call when user searches
+ * @param searchString - Search query
+ * @param contentIds - Array of product IDs in results (optional)
+ */
 export async function trackSearch(searchString: string, contentIds?: string[]): Promise<boolean> {
   const eventData: Record<string, any> = {
     search_string: searchString,
-    content_type: 'product',
+    content_type: "product",
   };
-  if (contentIds && contentIds.length > 0) eventData.content_ids = contentIds;
 
-  const { success, eventId } = await sendEventToServer('Search', eventData);
-  if (success) fireBrowserPixel('Search', eventId, { search_string: searchString });
-  return success;
+  if (contentIds && contentIds.length > 0) {
+    eventData.content_ids = contentIds;
+  }
+
+  return await sendEventToServer("Search", eventData);
 }
 
+/**
+ * Track Contact event - Call when user submits contact form
+ */
 export async function trackContact(): Promise<boolean> {
-  const { success, eventId } = await sendEventToServer('Contact');
-  if (success) fireBrowserPixel('Contact', eventId);
-  return success;
+  return await sendEventToServer("Contact");
 }
 
+/**
+ * Track Lead event - Call when user signs up or shows interest
+ */
 export async function trackLead(): Promise<boolean> {
-  const { success, eventId } = await sendEventToServer('Lead');
-  if (success) fireBrowserPixel('Lead', eventId);
-  return success;
+  return await sendEventToServer("Lead");
 }
 
+/**
+ * Track CompleteRegistration event - Call when user completes signup
+ */
 export async function trackCompleteRegistration(): Promise<boolean> {
-  const { success, eventId } = await sendEventToServer('CompleteRegistration');
-  if (success) fireBrowserPixel('CompleteRegistration', eventId);
-  return success;
+  return await sendEventToServer("CompleteRegistration");
 }

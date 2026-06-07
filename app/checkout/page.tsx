@@ -172,7 +172,7 @@ function CheckoutPageContent() {
         item_price: item.discountedPrice || item.price,
       }));
 
-      trackInitiateCheckout(checkoutTotal, "BDT", contents, formData.email);
+      trackInitiateCheckout(checkoutTotal, "BDT", contents);
     }
   }, [isAuthenticated, cartItems.length, formData.deliveryZone]);
 
@@ -348,7 +348,7 @@ function CheckoutPageContent() {
         item_price: item.discountedPrice || item.price,
       }));
 
-      trackPurchase(parseFloat(total.toFixed(2)), "BDT", contents, formData.email);
+      trackPurchase(total, "BDT", contents);
 
       // Clear cart and show success
       dispatch(clearCart());
