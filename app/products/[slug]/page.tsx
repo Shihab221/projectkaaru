@@ -442,7 +442,7 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
-              <div className="flex gap-3 mt-4">
+              <div className="gap-3 mt-4">
                 {product.images.map((image, index) => (
                   <button
                     key={index}

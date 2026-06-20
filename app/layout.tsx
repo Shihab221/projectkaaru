@@ -4,7 +4,7 @@ import { ReduxProvider } from "@/redux/provider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartSidebar } from "@/components/cart/CartSidebar";
-import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { MessengerButton } from "@/components/ui/MessengerButton";
 import { Toaster } from "react-hot-toast";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 
@@ -51,7 +51,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <CartSidebar />
-          <WhatsAppButton />
+          <MessengerButton />
           <Toaster
             position="top-right"
             toastOptions={{
