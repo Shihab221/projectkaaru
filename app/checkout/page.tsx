@@ -713,6 +713,12 @@ function CheckoutPageContent() {
                       {formatPrice(shippingCost)}) via bKash or Nagad. You will pay for the
                       items when you receive your order.
                     </p>
+                    <br/>
+                    <p className="text-sm text-amber-900">
+                      {/* // bengali  */}
+                      আপনার 'ক্যাশ অন ডেলিভারি' (Cash on Delivery) অর্ডারটি নিশ্চিত করতে ডেলিভারি চার্জ পরিশোধ করুন। (
+                      {formatPrice(shippingCost)}) বিকাশ বা নগদের মাধ্যমে। অর্ডার হাতে পাওয়ার সময় আপনি পণ্যের মূল্য পরিশোধ করবেন।
+                    </p>
                   </div>
 
                   <div className="space-y-3">
@@ -754,7 +760,7 @@ function CheckoutPageContent() {
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                      {formData.codPrepaymentMethod === "bkash" ? "bKash" : "Nagad"} Payment Details
+                      {formData.codPrepaymentMethod === "bkash" ? "bKash" : "Nagad"} Send Money Option Details
                     </h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
